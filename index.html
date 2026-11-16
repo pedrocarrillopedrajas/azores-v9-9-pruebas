@@ -30,20 +30,22 @@
     </section>
     <div class="notice"><strong>Datos en Supabase:</strong> comprueba el indicador de sincronización antes de cerrar. Conserva copias JSON periódicas. Si dos dispositivos editan a la vez, el último guardado puede prevalecer.</div>
     <section class="backup-panel" aria-label="Protección de datos"><div><strong>Protección de datos</strong><p>Guarda una copia de todas las operaciones y cuentas, incluidas las fotos. Puedes restaurarla más adelante.</p></div><div class="action-group"><button type="button" class="primary" id="exportBackup">Descargar copia</button><button type="button" class="secondary" id="importBackup">Restaurar copia</button><input type="file" id="backupFile" accept=".json,application/json" hidden></div></section>
-    <section class="stats" id="stats">
-      <article class="stat"><span>Dinero disponible</span><strong id="cash">0,00 €</strong><small>Saldo conjunto de Vinted</small></article>
-      <article class="stat"><span>Productos en inventario</span><strong id="stock">0</strong><small>Compras aún no vendidas</small></article>
-      <article class="stat"><span>Ventas registradas</span><strong id="sales">0</strong><small>Operaciones vendidas</small></article>
-      <article class="stat"><span>Beneficio generado</span><strong id="profit">0,00 €</strong><small>Reparto 60 % / 40 %</small></article>
+    <section class="home-summary" id="homeSummary" aria-label="Resumen de AZORES">
+      <div class="home-summary-head"><span class="eyebrow">RESUMEN GENERAL</span><h2>Tu negocio de un vistazo</h2></div>
+      <article class="home-main-card"><span>Dinero disponible</span><strong id="homeCash">0,00 €</strong><small>Saldo conjunto de las cuentas Vinted</small></article>
+      <div class="home-secondary-grid">
+        <article class="home-mini-card"><span>Pendiente de cobro</span><strong id="homePending">0,00 €</strong></article>
+        <article class="home-mini-card"><span>Productos sin vender</span><strong id="homeStock">0</strong></article>
+      </div>
     </section>
     <section class="content-card">
       <div class="section-heading"><div><p class="eyebrow">GESTIÓN</p><h2 id="sectionTitle">Inventario</h2></div><button class="primary" id="newProduct">＋ Añadir producto</button></div>
       <nav class="tabs" aria-label="Secciones">
-        <button data-tab="Compras">Compras</button><button class="active" data-tab="Inventario">Inventario</button><button data-tab="Ventas">Ventas</button><button data-tab="Envíos">Envíos</button><button data-tab="Cuentas">Cuentas</button><button data-tab="Beneficios">Beneficios</button>
+        <button data-tab="Inicio" class="active">Inicio</button><button data-tab="Compras">Compras</button><button data-tab="Inventario">Inventario</button><button data-tab="Ventas">Ventas</button><button data-tab="Envíos">Envíos</button><button data-tab="Cuentas">Cuentas</button><button data-tab="Beneficios">Beneficios</button>
       </nav>
       <div id="view"></div>
     </section>
-<footer>AZORES · PRUEBA ACTUALIZACIÓN AUTOMÁTICA · Diseñado para ordenador y móvil</footer>
+    <footer>AZORES · Versión 9.0 · Diseñado para ordenador y móvil</footer>
   </main>
   <dialog id="productDialog">
     <form id="productForm" method="dialog">

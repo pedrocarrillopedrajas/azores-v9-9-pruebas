@@ -110,24 +110,32 @@ function financesSummary(){
  const profit=products.reduce((t,p)=>t+(isSold(p)?Number(p.salePrice)-Number(p.purchasePrice||0):0),0);
  return {balances,capital,repaid,capitalPending,pending,inventory,profit,total:balances.Aurora+balances.Pedro};
 }
-let activeTab="Inventario", photoData="", editingId=null, editingSaleId=null, editingShipmentId=null;
+let activeTab="Inicio", photoData="", editingId=null, editingSaleId=null, editingShipmentId=null;
 const trackingPreview=new Map();
 let trackingRun=0;
 const $=s=>document.querySelector(s);
 const money=n=>(Number(n)||0).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 function save(){localStorage.setItem(KEY,JSON.stringify(products));render();queueCloudSave()}
 function stats(){
- const stock=products.filter(p=>!isSold(p)).length;
- const sold=products.filter(isSold).length;
- const profit=products.reduce((a,p)=>a+(isSold(p)?Number(p.salePrice)-Number(p.purchasePrice||0):0),0);
- $("#stock").textContent=stock;$("#sales").textContent=sold;$("#profit").textContent=money(profit);$("#cash").textContent=money(financesSummary().total);
+ const f=financesSummary();
+ document.getElementById("homeCash").textContent=money(f.total);
+ document.getElementById("homePending").textContent=money(f.pending);
+ document.getElementById("homeStock").textContent=products.filter(p=>!isSold(p)).length;
 }
 function isSold(p){return p.salePrice!==""&&p.salePrice!=null}
 function productStatus(p){return isSold(p)?"Vendido":(p.status||"Sin vender")}
 function render(){
  stats();$("#sectionTitle").textContent=activeTab;
+ const home=activeTab==="Inicio";
+ $("#homeSummary").hidden=!home;
+ document.querySelector(".content-card").classList.toggle("home-navigation",home);
+ document.querySelector(".section-heading").hidden=home;
+ document.querySelector(".welcome").hidden=home;
+ document.querySelector(".notice").hidden=home;
+ document.querySelector(".backup-panel").hidden=home;
  document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===activeTab));
  const view=$("#view");
+ if(home){view.innerHTML="";return;}
  if(activeTab==="Compras"||activeTab==="Inventario"){
    const rows=products.filter(p=>activeTab==="Compras"||!isSold(p));
    if(!rows.length){view.innerHTML=`<div class="empty"><div class="symbol">▧</div><h3>${activeTab==="Compras"?"Todavía no hay compras":"Tu inventario está vacío"}</h3><p>Añade el primer producto para empezar a organizar AZORES.</p><button class="primary" id="emptyAdd">＋ Añadir producto</button></div>`;$("#emptyAdd").onclick=()=>openDialog();return}
