@@ -111,6 +111,8 @@ function financesSummary(){
  return {balances,capital,repaid,capitalPending,pending,inventory,profit,total:balances.Aurora+balances.Pedro};
 }
 let activeTab="Inventario", photoData="", editingId=null, editingSaleId=null, editingShipmentId=null;
+const trackingPreview=new Map();
+let trackingRun=0;
 const $=s=>document.querySelector(s);
 const money=n=>(Number(n)||0).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
 function save(){localStorage.setItem(KEY,JSON.stringify(products));render();queueCloudSave()}
@@ -136,8 +138,8 @@ function render(){
    const add=$("#addSale");if(add)add.onclick=()=>openSaleDialog();
  }else if(activeTab==="Envíos"){
    const sold=products.filter(p=>isSold(p)&&p.paymentStatus!=="Cobrado");
-   view.innerHTML=`<div class="simple-panel" style="margin-bottom:14px"><strong>V9.9 · Prueba de conexión (solo lectura)</strong><p class="muted">Consulta un envío Vinted Go sin modificar ningún dato de AZORES.</p><button type="button" class="primary" id="testVintedGo" ${cloudReady?"":"disabled"}>Probar seguimiento Vinted Go</button><p id="testVintedGoResult" role="status" style="white-space:pre-wrap;overflow-wrap:anywhere;margin-top:10px">La prueba todavía no se ha ejecutado.</p></div>`+(sold.length?`<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Comprador</th><th>Transportista</th><th>Seguimiento</th><th>Estado del paquete</th><th>Última actualización</th><th>Acciones</th></tr></thead><tbody>${sold.map(p=>{const sh=p.shipping||{};const updated=sh.lastUpdated?new Date(sh.lastUpdated).toLocaleString("es-ES",{dateStyle:"short",timeStyle:"short"}):"Pendiente de consulta automática";return `<tr><td><strong>${esc(p.name)}</strong></td><td>${esc(p.buyer||"—")}</td><td>${esc(sh.carrier||"—")}</td><td>${safeTrackingLink(sh.trackingUrl)}</td><td><span class="pill">${esc(sh.status||"Pendiente de seguimiento")}</span></td><td>${esc(updated)}</td><td><button type="button" class="edit-product" data-ship-edit="${esc(p.id)}">Editar envío</button></td></tr>`}).join("")}</tbody></table></div><p class="muted">El estado del paquete es independiente del cobro. Los envíos permanecen aquí hasta que marques la venta como «Cobrado».</p>`:`<div class="simple-panel"><strong>No hay envíos pendientes de cobro</strong><p>Los pedidos pendientes de cobro aparecerán aquí automáticamente.</p></div>`);
-   const testButton=document.getElementById("testVintedGo");if(testButton)testButton.onclick=testVintedGoReadOnly;
+   view.innerHTML=`<div class="simple-panel" style="margin-bottom:14px"><strong>V9.10 · Seguimiento automático (solo lectura)</strong><p class="muted">Al entrar en Envíos se consultan automáticamente los paquetes Vinted Go. Los resultados son temporales: no se guardan en Supabase.</p><button type="button" class="primary" id="testVintedGo" ${cloudReady?"":"disabled"}>Volver a consultar Vinted Go</button><p id="testVintedGoResult" role="status" style="white-space:pre-wrap;overflow-wrap:anywhere;margin-top:10px">Preparado para consultar los envíos Vinted Go.</p></div>`+(sold.length?`<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Comprador</th><th>Transportista</th><th>Seguimiento</th><th>Estado del paquete</th><th>Última actualización</th><th>Acciones</th></tr></thead><tbody>${sold.map(p=>{const sh=p.shipping||{};const preview=trackingPreview.get(p.id);const effective=preview||sh;const updated=effective.lastUpdated?new Date(effective.lastUpdated).toLocaleString("es-ES",{dateStyle:"short",timeStyle:"short"}):"Pendiente de consulta automática";return `<tr><td><strong>${esc(p.name)}</strong></td><td>${esc(p.buyer||"—")}</td><td>${esc(sh.carrier||"—")}</td><td>${safeTrackingLink(sh.trackingUrl)}</td><td><span class="pill">${esc(effective.status||"Pendiente de seguimiento")}</span></td><td>${esc(updated)}</td><td><button type="button" class="edit-product" data-ship-edit="${esc(p.id)}">Editar envío</button></td></tr>`}).join("")}</tbody></table></div><p class="muted">El estado del paquete es independiente del cobro. Los envíos permanecen aquí hasta que marques la venta como «Cobrado».</p>`:`<div class="simple-panel"><strong>No hay envíos pendientes de cobro</strong><p>Los pedidos pendientes de cobro aparecerán aquí automáticamente.</p></div>`);
+   const testButton=document.getElementById("testVintedGo");if(testButton)testButton.onclick=refreshVintedGoPreviews;
  }else if(activeTab==="Cuentas"){
    const f=financesSummary();
    view.innerHTML=`<div class="finance-grid">
@@ -164,21 +166,42 @@ function render(){
  }
 }
 
-async function testVintedGoReadOnly(){
- const button=document.getElementById("testVintedGo"),output=document.getElementById("testVintedGoResult");
- if(!button||!output)return;
- const candidates=products.filter(p=>isSold(p)&&p.paymentStatus!=="Cobrado"&&/vinted\s*go/i.test(p.shipping?.carrier||""));
- const match=candidates.map(p=>{try{const u=new URL(p.shipping?.trackingUrl||"");const m=u.hostname==="vintedgo.com"&&u.pathname.match(/^\/es\/tracking\/(\d{16})\/?$/);return m?{p,number:m[1]}:null}catch{return null}}).find(Boolean);
- if(!match){output.textContent="No se encontró un envío pendiente de cobro con enlace válido de Vinted Go.";return;}
- button.disabled=true;output.textContent="Consultando "+match.p.name+"…";
+function vintedGoNumber(p){
+ if(!isSold(p)||p.paymentStatus==="Cobrado"||!/vinted\s*go/i.test(p.shipping?.carrier||""))return null;
  try{
-  if(!cloudReady||!cloudSession?.access_token)throw Error("No hay una sesión de Supabase activa.");
-  const response=await cloudFetch("/functions/v1/azores-prueba-vintedgo?seguimiento="+encodeURIComponent(match.number),{method:"POST",body:"{}"});
-  const result=await response.json();
-  if(result.resultado!=="Seguimiento leído")throw Error(result.resultado||"La función no devolvió un seguimiento válido.");
-  output.textContent="Conexión correcta (sin guardar cambios)\nProducto: "+match.p.name+"\nEstado: "+String(result.estadoPaquete||"—")+"\nFecha: "+String(result.ultimaActualizacion||"—")+"\nMovimientos: "+String(result.totalMovimientos??"—");
- }catch(error){output.textContent="La prueba no se ha completado. No se ha modificado ningún dato.\nDetalle: "+String(error.message||error);}
- finally{button.disabled=false;}
+  const u=new URL(p.shipping?.trackingUrl||"");
+  if(u.protocol!=="https:"||u.hostname!=="vintedgo.com")return null;
+  return u.pathname.match(/^\/es\/tracking\/(\d{16})\/?$/)?.[1]||null;
+ }catch{return null;}
+}
+async function refreshVintedGoPreviews(){
+ if(!cloudReady||!cloudSession?.access_token||activeTab!=="Envíos")return;
+ const run=++trackingRun;
+ const button=document.getElementById("testVintedGo");
+ const output=document.getElementById("testVintedGoResult");
+ const candidates=products.map(p=>({p,number:vintedGoNumber(p)})).filter(x=>x.number);
+ if(!output)return;
+ if(!candidates.length){output.textContent="No hay envíos Vinted Go pendientes con enlace válido.";return;}
+ if(button)button.disabled=true;
+ output.textContent="Consultando "+candidates.length+" envío(s) de Vinted Go…";
+ let ok=0,fail=0;
+ for(const {p,number} of candidates){
+  if(run!==trackingRun)break;
+  try{
+   const response=await cloudFetch("/functions/v1/azores-prueba-vintedgo?seguimiento="+encodeURIComponent(number),{method:"POST",body:"{}"});
+   const result=await response.json();
+   if(result.resultado!=="Seguimiento leído"||typeof result.estadoPaquete!=="string"||!Number.isFinite(Date.parse(result.ultimaActualizacion)))throw Error("Respuesta de seguimiento no válida");
+   // Solo visualización: no se modifican products, localStorage ni Supabase.
+   trackingPreview.set(p.id,{status:result.estadoPaquete,lastUpdated:result.ultimaActualizacion});
+   ok++;
+  }catch(error){fail++;}
+ }
+ if(run!==trackingRun)return;
+ if(activeTab==="Envíos"){
+  render();
+  const currentOutput=document.getElementById("testVintedGoResult");
+  if(currentOutput)currentOutput.textContent="Consulta terminada: "+ok+" correcto(s), "+fail+" sin actualizar. Vista temporal, sin guardar cambios.";
+ }
 }
 
 function safeTrackingLink(url){
@@ -206,7 +229,7 @@ function openDialog(id=null){
  dialog.showModal();
 }
 $("#newProduct").onclick=()=>openDialog();$("#newProductTop").onclick=()=>openDialog();$("#closeDialog").onclick=()=>dialog.close();$("#cancelDialog").onclick=()=>dialog.close();
-document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{activeTab=b.dataset.tab;render()}));
+document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{activeTab=b.dataset.tab;render();if(activeTab==="Envíos")refreshVintedGoPreviews()}));
 $("#productForm [name=photo]").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{photoData=reader.result;$("#photoPreview").innerHTML=`<img src="${photoData}" alt="Vista previa">`};reader.readAsDataURL(f)});
 $("#view").addEventListener("click",e=>{const b=e.target.closest("[data-edit]");if(b)openDialog(b.dataset.edit);const sell=e.target.closest("[data-sell]");if(sell)openSaleDialog(sell.dataset.sell);const editSale=e.target.closest("[data-sale-edit]");if(editSale)openSaleDialog(editSale.dataset.saleEdit,true);const cancel=e.target.closest("[data-sale-cancel]");if(cancel)cancelSale(cancel.dataset.saleCancel);const ship=e.target.closest("[data-ship-edit]");if(ship)openShippingDialog(ship.dataset.shipEdit);const del=e.target.closest("[data-delete]");if(del)deletePurchase(del.dataset.delete)});
 function deletePurchase(id){
