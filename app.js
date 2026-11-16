@@ -356,7 +356,26 @@ shippingForm.addEventListener("submit",e=>{
  save();shippingDialog.close();
 });
 render();
-if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("./sw.js").catch(()=>{});
+// Comprobar nuevas versiones al iniciar y al volver a la aplicación.
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  let updateNoticeShown = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (updateNoticeShown) return;
+    updateNoticeShown = true;
+    // No recargar silenciosamente: el usuario puede estar editando un formulario.
+    if (window.confirm("Hay una nueva versión de AZORES disponible. ¿Actualizar ahora? Guarda antes cualquier cambio que estés editando.")) {
+      location.reload();
+    }
+  });
+  navigator.serviceWorker.register("./sw.js", {updateViaCache: "none"}).then(registration => {
+    const check = () => { if (navigator.onLine) registration.update().catch(() => {}); };
+    check();
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) check();
+    });
+    window.addEventListener("pageshow", check);
+  }).catch(() => {});
+}
 
 
 // Copias completas de AZORES (datos del navegador, no sincronización)
