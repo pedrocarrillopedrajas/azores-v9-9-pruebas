@@ -1,5 +1,5 @@
-// AZORES - caché de aplicación, versión de pruebas 2026-11-16-1
-const CACHE = "azores-shell-v100-test-20261116-1";
+// AZORES - caché de aplicación prueba envíos limpios 2026-11-16-1
+const CACHE = "azores-shell-v101-envios-limpios-20261116-1";
 const FILES = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./logo-azores.jpg"];
 const SCOPE = new URL(self.registration.scope);
 self.addEventListener("install", event => {
