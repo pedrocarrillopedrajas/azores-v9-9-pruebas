@@ -1,0 +1,9 @@
+AZORES V9.8 — Preparación del seguimiento de envíos
+
+Se mantiene la lógica de V9.7 para ventas, cobros, caja y beneficios.
+Envíos sigue mostrando todas las ventas pendientes de cobro, incluso cuando el paquete ya está entregado.
+Marcar una venta como «Cobrado» hace que desaparezca de Envíos.
+
+La tabla de Envíos muestra ahora el estado del paquete y la fecha de última actualización.
+La estructura conserva estado, fecha y eventos del seguimiento para integrar posteriormente una consulta automática autorizada.
+Esta versión todavía NO consulta transportistas automáticamente.

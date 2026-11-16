@@ -1,0 +1,1 @@
+AZORES V9.4: Se oculta el número de seguimiento tanto en la tabla de Envíos como en el formulario de edición. Los números previamente guardados se conservan internamente al editar un envío. Se mantiene el resto de funcionalidades de V9.3 y se incrementa la versión de caché de la PWA.

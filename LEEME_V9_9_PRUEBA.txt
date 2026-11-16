@@ -1,0 +1,7 @@
+AZORES V9.9 - PRUEBA DE CONEXION VINTED GO (SOLO LECTURA)
+
+No sustituir la version publicada. Para probar CORS debe alojarse bajo https://pedrocarrillopedrajas.github.io (por ejemplo, en una subcarpeta independiente de pruebas). Abierto como file:// puede fallar por origen CORS.
+
+En Envios: boton Probar seguimiento Vinted Go. Consulta el primer envio Vinted Go pendiente de cobro con enlace valido y muestra el resultado. No guarda el resultado ni cambia productos, cobros, balances o envios.
+
+La funcion Supabase debe permanecer protegida con JWT y estar desplegada con CORS. Si la verificacion legacy JWT no acepta el token de sesion, se mostrara un error sin alterar datos.

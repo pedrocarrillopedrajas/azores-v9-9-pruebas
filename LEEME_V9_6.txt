@@ -1,0 +1,7 @@
+AZORES V9.6 - Beneficios
+- Beneficio total generado por ventas: suma de márgenes de ventas.
+- Beneficio actual: beneficio de ventas menos coste del inventario sin vender.
+- Beneficio Auro: 60 % del beneficio actual.
+- Beneficio Pedro: 40 % del beneficio actual.
+- Resto de tarjetas y funciones sin cambios.
+- Caché PWA actualizada a v96.

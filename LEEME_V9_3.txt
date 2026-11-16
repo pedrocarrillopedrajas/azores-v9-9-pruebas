@@ -1,0 +1,3 @@
+AZORES V9.3 — Envíos pendientes de cobro
+En Envíos solo aparecen ventas cuyo estado de cobro no es Cobrado. Al marcar una venta Cobrado desaparece de Envíos, sin eliminar datos. Si vuelve a pendiente, reaparece.
+Para actualizar, publica todos los archivos de esta carpeta sobre la versión anterior, conservando el mismo sitio y origen para mantener los datos locales. Haz una copia de seguridad antes de actualizar.

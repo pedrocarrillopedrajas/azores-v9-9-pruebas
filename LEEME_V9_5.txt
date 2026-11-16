@@ -1,0 +1,4 @@
+AZORES V9.5 — Saldo disponible en portada
+La tarjeta Dinero disponible muestra el total calculado por financesSummary(), igual que Cuentas.
+No se modifican los datos ni la lógica financiera.
+Caché de PWA actualizada a v95.
