@@ -1,0 +1,4 @@
+AZORES V9.14 - PRUEBAS
+CATA se muestra dentro del recuadro verde de Dinero disponible, a la derecha, durante 3 segundos cuando el saldo es positivo. Se activa aunque el sistema tenga preferencia de movimiento reducido, según solicitud expresa de probar la animación.
+No se modifican cálculos, datos ni lógica financiera.
+Subir los archivos al repositorio de PRUEBAS, no al definitivo.

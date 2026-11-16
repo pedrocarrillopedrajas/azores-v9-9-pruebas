@@ -50,3 +50,9 @@ dialog::backdrop{background:#102B2477}
 .cata-celebration img{display:block;max-width:min(190px,60vw);height:auto;object-fit:contain;border-radius:16px}
 @keyframes cata-entrar{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.cata-celebration{animation:none}}
+
+/* V9.14: CATA integrada en la tarjeta verde sin cubrir los importes */
+.home-main-card{position:relative;min-height:165px;padding-right:205px;overflow:hidden}
+.home-main-card .cata-celebration{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:174px;height:145px;margin:0;display:flex;align-items:center;justify-content:center;animation:none;pointer-events:none}
+.home-main-card .cata-celebration img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:10px}
+@media(max-width:540px){.home-main-card{padding-right:118px;min-height:148px}.home-main-card .cata-celebration{right:7px;width:108px;height:120px}.home-main-card strong{font-size:clamp(25px,6vw,42px)}}

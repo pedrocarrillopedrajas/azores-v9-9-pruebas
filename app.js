@@ -133,7 +133,7 @@ function render(){
    const cata=document.getElementById("cataCelebration");
    if(cata){
      clearTimeout(cataTimer);
-     cata.hidden=financesSummary().total<=0 || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+     cata.hidden=financesSummary().total<=0;
      if(!cata.hidden){
        const picture=cata.querySelector("img");
        picture.src="cata-celebracion.gif?play="+Date.now();
