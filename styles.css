@@ -43,3 +43,10 @@ dialog::backdrop{background:#102B2477}
 .home-mini-card span{font-size:13px;color:var(--muted)}.home-mini-card strong{font-size:clamp(22px,4vw,28px);line-height:1.2;color:var(--navy);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .content-card.home-navigation{max-width:760px;margin:0 auto;padding:12px 16px}.home-navigation .tabs{margin:0;padding:0;border:0;flex-wrap:wrap;justify-content:center}.home-navigation .tabs button{font-size:13px}.home-navigation #view{display:none}
 @media(max-width:540px){.home-main-card{padding:22px 19px}.home-mini-card{padding:16px 13px}.home-mini-card span{font-size:12px}.home-navigation .tabs{justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto}.home-navigation .tabs button{padding:9px 11px}}
+
+/* CATA: breve celebración en Inicio, solo cuando hay dinero disponible */
+.cata-celebration{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;margin:4px auto 12px;text-align:center;color:#246b47;font-size:13px;font-weight:700;animation:cata-entrar .3s ease-out both}
+.cata-celebration[hidden]{display:none!important}
+.cata-celebration img{display:block;max-width:min(190px,60vw);height:auto;object-fit:contain;border-radius:16px}
+@keyframes cata-entrar{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.cata-celebration{animation:none}}

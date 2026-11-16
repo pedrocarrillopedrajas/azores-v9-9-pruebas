@@ -111,6 +111,7 @@ function financesSummary(){
  return {balances,capital,repaid,capitalPending,pending,inventory,profit,total:balances.Aurora+balances.Pedro};
 }
 let activeTab="Inicio", photoData="", editingId=null, editingSaleId=null, editingShipmentId=null;
+let cataTimer=null, cataLastTab=null;
 const trackingPreview=new Map();
 let trackingRun=0;
 const $=s=>document.querySelector(s);
@@ -119,6 +120,7 @@ function save(){localStorage.setItem(KEY,JSON.stringify(products));render();queu
 function stats(){
  const f=financesSummary();
  document.getElementById("homeCash").textContent=money(f.total);
+ if(f.total<=0){const cata=document.getElementById("cataCelebration");if(cata)cata.hidden=true;}
  document.getElementById("homePending").textContent=money(f.pending);
  document.getElementById("homeStock").textContent=products.filter(p=>!isSold(p)).length;
 }
@@ -127,6 +129,22 @@ function productStatus(p){return isSold(p)?"Vendido":(p.status||"Sin vender")}
 function render(){
  stats();$("#sectionTitle").textContent=activeTab;
  const home=activeTab==="Inicio";
+ if(home && cataLastTab!=="Inicio") {
+   const cata=document.getElementById("cataCelebration");
+   if(cata){
+     clearTimeout(cataTimer);
+     cata.hidden=financesSummary().total<=0 || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+     if(!cata.hidden){
+       const picture=cata.querySelector("img");
+       picture.src="cata-celebracion.gif?play="+Date.now();
+       cataTimer=setTimeout(()=>{cata.hidden=true},3000);
+     }
+   }
+ } else if(!home){
+   clearTimeout(cataTimer);
+   const cata=document.getElementById("cataCelebration");if(cata)cata.hidden=true;
+ }
+ cataLastTab=activeTab;
  $("#homeSummary").hidden=!home;
  document.querySelector(".content-card").classList.toggle("home-navigation",home);
  document.querySelector(".section-heading").hidden=home;

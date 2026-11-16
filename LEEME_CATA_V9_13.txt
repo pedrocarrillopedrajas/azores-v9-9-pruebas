@@ -1,0 +1,6 @@
+AZORES V9.13 - CATA celebracion (PRUEBAS)
+Subir los archivos de este ZIP al repositorio de pruebas.
+CATA aparece durante 3 segundos al entrar en Inicio cuando hay dinero disponible.
+No aparece si el dinero disponible es cero o negativo.
+Respeta la preferencia de movimiento reducido.
+No se han modificado calculos, datos ni sincronizacion.

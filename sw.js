@@ -1,6 +1,6 @@
 // AZORES - caché de aplicación prueba envíos limpios 2026-11-16-1
-const CACHE = "azores-shell-v102-inicio-resumen-20261116-1";
-const FILES = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./logo-azores.jpg"];
+const CACHE = "azores-shell-v103-cata-20261116-1";
+const FILES = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./logo-azores.jpg", "./cata-celebracion.gif"];
 const SCOPE = new URL(self.registration.scope);
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
