@@ -51,7 +51,7 @@
     <footer>AZORES · Versión 9.0 · Diseñado para ordenador y móvil</footer>
   </main>
   <dialog id="productDialog">
-    <form id="productForm" method="dialog">
+    <form id="productForm" method="post">
       <div class="dialog-head"><div><p class="eyebrow">INVENTARIO</p><h2 id="dialogTitle">Nuevo producto</h2></div><button type="button" class="close" id="closeDialog">×</button></div>
       <label>Nombre o descripción<input name="name" required maxlength="100" placeholder="Ej. Botas Bimani"></label>
       <div class="form-grid">
@@ -65,7 +65,7 @@
       <label>Forma de pago<select name="purchaseMethod"><option value="Vinted">Saldo de Vinted</option><option value="Personal">Dinero personal (aportación de capital)</option></select></label>
       <label>Estado del producto<select name="status"><option>Por recibir</option><option>Por subir</option><option selected>Sin vender</option><option>Vendido</option></select></label>
       <label class="photo-picker">Fotografía del producto <span>(opcional)</span><input name="photo" type="file" accept="image/*"><small>Una foto pequeña para reconocerlo en el inventario.</small></label>
-      <div id="photoPreview" class="photo-preview"></div>
+      <div id="photoPreview" class="photo-preview"></div><button type="button" class="secondary" id="removeProductPhoto" hidden>Eliminar fotografía</button><p id="productFormMessage" role="status" aria-live="polite" style="font-size:.85rem"></p>
       <div class="dialog-actions"><button type="button" class="secondary" id="cancelDialog">Cancelar</button><button type="submit" class="primary" id="saveProductButton">Guardar producto</button></div>
     </form>
   </dialog>

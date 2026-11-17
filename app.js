@@ -279,6 +279,7 @@ function openDialog(id=null){
  editingId=typeof id==="string"?id:null;
  const p=products.find(item=>item.id===editingId);
  const form=$("#productForm");form.reset();
+ $("#productFormMessage").textContent="";
  photoData=p?.photo||"";
  form.elements.name.value=p?.name||"";
  form.elements.purchaseDate.value=p?.purchaseDate||"";
@@ -288,14 +289,31 @@ function openDialog(id=null){
  form.elements.purchaseMethod.value=p?.purchaseMethod||"Vinted";
  form.elements.status.value=p?productStatus(p):"Sin vender";
  form.elements.status.disabled=!!p&&isSold(p);
- $("#photoPreview").innerHTML=photoData?`<img src="${photoData}" alt="Vista previa">`:"";
+ updateProductPhotoPreview();
  $("#dialogTitle").textContent=p?"Editar producto":"Nuevo producto";
  $("#saveProductButton").textContent=p?"Guardar cambios":"Guardar producto";
  dialog.showModal();
 }
 $("#newProduct").onclick=()=>openDialog();$("#newProductTop").onclick=()=>openDialog();$("#closeDialog").onclick=()=>dialog.close();$("#cancelDialog").onclick=()=>dialog.close();
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{activeTab=b.dataset.tab;if(activeTab==="Ventas")salesGroupOpen=null;render();if(activeTab==="Envíos")refreshVintedGoPreviews()}));
-$("#productForm [name=photo]").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{photoData=reader.result;$("#photoPreview").innerHTML=`<img src="${photoData}" alt="Vista previa">`};reader.readAsDataURL(f)});
+function updateProductPhotoPreview(){
+ $("#photoPreview").innerHTML=photoData?`<img src="${photoData}" alt="Vista previa">`:"";
+ $("#removeProductPhoto").hidden=!photoData;
+}
+$("#removeProductPhoto").addEventListener("click",()=>{
+ photoData="";
+ $("#productForm [name=photo]").value="";
+ updateProductPhotoPreview();
+ $("#productFormMessage").textContent="Fotografía eliminada. Pulsa Guardar cambios para confirmar.";
+});
+$("#productForm [name=photo]").addEventListener("change",e=>{
+ const f=e.target.files[0];if(!f)return;
+ if(!f.type.startsWith("image/")){$("#productFormMessage").textContent="Selecciona una imagen válida.";return;}
+ const reader=new FileReader();
+ reader.onload=()=>{photoData=String(reader.result);updateProductPhotoPreview();$("#productFormMessage").textContent="Fotografía preparada. Pulsa Guardar cambios.";};
+ reader.onerror=()=>{$("#productFormMessage").textContent="No se pudo leer la fotografía.";};
+ reader.readAsDataURL(f);
+});
 $("#view").addEventListener("click",e=>{const b=e.target.closest("[data-edit]");if(b)openDialog(b.dataset.edit);const sell=e.target.closest("[data-sell]");if(sell)openSaleDialog(sell.dataset.sell);const editSale=e.target.closest("[data-sale-edit]");if(editSale)openSaleDialog(editSale.dataset.saleEdit,true);const cancel=e.target.closest("[data-sale-cancel]");if(cancel)cancelSale(cancel.dataset.saleCancel);const ship=e.target.closest("[data-ship-edit]");if(ship)openShippingDialog(ship.dataset.shipEdit);const del=e.target.closest("[data-delete]");if(del)deletePurchase(del.dataset.delete)});
 function deletePurchase(id){
  if(!cloudReady){alert("Espera a que se conecte Supabase antes de eliminar una compra.");return;}
@@ -308,11 +326,20 @@ function deletePurchase(id){
  save();
 }
 $("#productForm").addEventListener("submit",e=>{
- e.preventDefault();const f=new FormData(e.currentTarget);
+ e.preventDefault();
+ const form=e.currentTarget;
+ if(!form.checkValidity()){
+  const invalid=form.querySelector(":invalid");
+  $("#productFormMessage").textContent="Revisa este campo antes de guardar: "+(invalid?.closest("label")?.textContent?.trim()||"campo obligatorio");
+  invalid?.focus();form.reportValidity();return;
+ }
+ if(!cloudReady){$("#productFormMessage").textContent="Espera a que AZORES conecte con la nube.";return;}
+ const f=new FormData(form);
  const fields={name:f.get("name"),purchaseDate:f.get("purchaseDate"),purchasePrice:f.get("purchasePrice"),origin:f.get("origin"),account:f.get("account"),purchaseMethod:f.get("purchaseMethod"),status:editingId&&products.find(x=>x.id===editingId)&&isSold(products.find(x=>x.id===editingId))?"Vendido":f.get("status"),photo:photoData};
  if(editingId){const p=products.find(item=>item.id===editingId);if(!p)return;Object.assign(p,fields)}
  else products.push({id:crypto.randomUUID(),...fields,salePrice:""});
- save();dialog.close();activeTab="Inventario";render();
+ try{save();dialog.close();activeTab="Inventario";render();}
+ catch(error){$("#productFormMessage").textContent="No se pudieron guardar los cambios: "+error.message;}
 });
 const saleDialog=$("#saleDialog"),saleForm=$("#saleForm");
 function openSaleDialog(id=null,edit=false){

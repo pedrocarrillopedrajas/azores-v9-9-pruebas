@@ -1,0 +1,1 @@
+AZORES V9.25 PRUEBAS: formulario de edición con mensajes de validación; botón para eliminar fotografía; cambio desde fototeca/cámara. Subir solo al repositorio de pruebas. No modificar la definitiva hasta comprobar sincronización.
