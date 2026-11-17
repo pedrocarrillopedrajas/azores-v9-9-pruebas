@@ -64,3 +64,16 @@ dialog::backdrop{background:#102B2477}
 .sales-group-toggle span{margin-left:8px}
 .sales-group-toggle:focus-visible{outline:2px solid #4e8c75;outline-offset:2px}
 .sales-empty-hint{padding:17px 20px;font-size:13px}
+
+/* V9.17: protección de datos compacta; no afecta a Supabase ni a copias */
+.welcome-actions{display:flex;align-items:flex-start;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.backup-dropdown{position:relative;z-index:5}
+.backup-dropdown>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:10px 14px;background:#fff;border:1px solid #cbdad7;border-radius:10px;color:#163f36;font-size:13px;font-weight:700;white-space:nowrap}
+.backup-dropdown>summary::-webkit-details-marker{display:none}
+.backup-dropdown>summary:focus-visible{outline:3px solid #6aab9d;outline-offset:2px}
+.backup-dropdown[open]>summary{background:#f1f7f5}
+.backup-dropdown[open] .backup-chevron{transform:rotate(180deg)}
+.backup-dropdown .backup-panel{position:absolute;right:0;top:calc(100% + 8px);width:min(350px,calc(100vw - 44px));display:flex;flex-direction:column;align-items:stretch;gap:14px;box-shadow:0 12px 30px #102c3b24;margin:0;padding:16px}
+.backup-dropdown .backup-panel .action-group{display:flex;flex-wrap:wrap;gap:8px}
+.backup-dropdown .backup-panel .action-group button{flex:1 1 130px}
+@media(max-width:650px){.welcome-actions{width:100%;justify-content:space-between}.backup-dropdown .backup-panel{right:0}}
