@@ -1,0 +1,1 @@
+V9.35 PRUEBAS. Botón «Eliminar todas las fotos» dentro de «Copias». Exige descargar copia en esta sesión, confirmación doble, guardar primero en Supabase, y borrar solo los archivos Storage referenciados por productos. No modifica productos ni finanzas. No elimina archivos huérfanos.

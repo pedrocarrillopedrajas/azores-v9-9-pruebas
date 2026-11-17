@@ -542,6 +542,47 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
 }
 
 
+// Limpieza voluntaria de todas las fotografías, nunca automática al instalar.
+let azoresBackupDownloadedThisSession=false;
+document.getElementById("clearAllPhotos").addEventListener("click",async()=>{
+ if(!cloudReady||!cloudSession?.user?.id||cloudDirty||cloudSaving){
+  alert("Espera a que aparezca «Sincronizado en Supabase» antes de limpiar las fotos.");return;
+ }
+ if(!azoresBackupDownloadedThisSession){
+  alert("Primero descarga una copia de seguridad desde «▣ Copias» en esta sesión.");return;
+ }
+ const withPhoto=products.filter(p=>p.photo);
+ if(!withPhoto.length){alert("Los productos ya están sin fotografías.");return;}
+ if(!confirm("Se quitarán TODAS las fotografías de "+withPhoto.length+" productos, antiguas y nuevas. NO se eliminarán los productos, compras, ventas, cuentas ni beneficios. ¿Continuar?"))return;
+ if(prompt("Para confirmar la limpieza escribe BORRAR FOTOS:")!=="BORRAR FOTOS")return;
+ const btn=document.getElementById("clearAllPhotos");btn.disabled=true;
+ const original=products;
+ const cleared=products.map(p=>({...p,photo:""}));
+ const storedPaths=[...new Set(original.map(p=>p.photo).filter(photoIsStored).map(photoPath))];
+ try{
+  // Persistir primero los datos sin fotos. Si falla, no cambiar estado local ni borrar archivos.
+  const snapshot={products:cleared,finances:JSON.parse(JSON.stringify(finances))};
+  await cloudFetch("/rest/v1/azores_state?on_conflict=user_id",{
+   method:"POST",headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},
+   body:JSON.stringify({user_id:cloudSession.user.id,data:snapshot,updated_at:new Date().toISOString()})
+  });
+  products=cleared;cacheLocalState();render();setCloudStatus("✓ Sincronizado en Supabase");
+  // Solo archivos de la cuenta que estaban referenciados por los productos.
+  let failures=0;
+  for(const path of storedPaths){
+   if(!path.startsWith(cloudSession.user.id+"/"))continue;
+   try{
+    await photoStorageFetch("/storage/v1/object/"+PHOTO_BUCKET+"/"+path.split("/").map(encodeURIComponent).join("/"),{method:"DELETE"});
+    const url=photoUrlCache.get(path);if(url?.startsWith("blob:"))URL.revokeObjectURL(url);
+    photoUrlCache.delete(path);
+   }catch(e){failures++;console.warn("No se pudo borrar el archivo",path,e);}
+  }
+  alert("Limpieza terminada: "+withPhoto.length+" productos sin fotografía. Los demás datos siguen intactos."+
+   (failures?" Atención: "+failures+" archivos no pudieron borrarse de Storage.":"")+
+   " Los archivos huérfanos antiguos de Storage que no estaban asociados a productos no se han tocado.");
+ }catch(e){alert("No se ha realizado la limpieza: "+e.message);}
+ finally{btn.disabled=false;}
+});
 // Copias completas de AZORES (datos del navegador, no sincronización)
 (function(){
  const exportButton=document.getElementById("exportBackup"), importButton=document.getElementById("importBackup"), fileInput=document.getElementById("backupFile");
@@ -557,6 +598,7 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
    const data={format:backupFormat,exportedAt:new Date().toISOString(),products:JSON.parse(JSON.stringify(products)),finances:finances};
    if(!Array.isArray(data.products)||!data.products.every(validProduct)||!validFinance(data.finances))throw Error("Los datos actuales no tienen un formato válido");
    const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+   azoresBackupDownloadedThisSession=true;
    const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="AZORES_copia_"+new Date().toISOString().slice(0,10)+".json";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
   }catch(e){alert("No se ha podido generar la copia: "+e.message)}
  });
