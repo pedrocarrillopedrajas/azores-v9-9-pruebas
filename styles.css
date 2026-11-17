@@ -94,3 +94,15 @@ dialog::backdrop{background:#102B2477}
 .header-actions .backup-dropdown .backup-panel{color:#163f36;letter-spacing:normal;z-index:50}
 body:has(#appShell[hidden]) .header-actions .backup-dropdown{display:none}
 @media(max-width:650px){.header-actions{gap:6px}.header-actions .backup-dropdown>summary{font-size:9px;padding:5px 8px}.header-actions .backup-dropdown .backup-panel{right:0}}
+
+/* V9.22 — Edición España: acentos visuales, sin alterar datos ni funciones */
+.brand-text{min-width:0}
+.brand-title{display:flex;align-items:center;gap:8px;width:max-content;max-width:100%}
+.brand-title strong{line-height:1.25}
+.spain-flag{width:24px;height:16px;flex:none;border-radius:2px;box-shadow:0 0 0 1px #ffffff25}
+.spain-stripe{display:block;width:100%;max-width:109px;height:3px;margin:4px 0 5px;border-radius:2px;background:linear-gradient(to bottom,#AA151B 0 25%,#F1BF00 25% 75%,#AA151B 75% 100%)}
+/* El rojo y gualda aparecen solo como acento en botones secundarios. */
+.secondary:not(:disabled){box-shadow:inset 0 -2px 0 #AA151B25}
+.secondary:not(:disabled):hover{box-shadow:inset 0 -2px 0 #AA151B60}
+.secondary:focus-visible{outline:2px solid #AA151B;outline-offset:2px}
+@media(max-width:760px){.brand-title{gap:6px}.spain-flag{width:20px;height:14px}.spain-stripe{max-width:99px}}

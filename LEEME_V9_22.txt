@@ -1,0 +1,4 @@
+AZORES V9.22 — Edición España (PRUEBAS)
+Cambios exclusivamente visuales: bandera roja y gualda dibujada junto a AZORES, franja fina bajo el nombre y acentos discretos en botones secundarios.
+No se modifican app.js, Supabase, datos, balances, ventas, compras, copias de seguridad ni CATA.
+Probar primero en el repositorio de pruebas.
