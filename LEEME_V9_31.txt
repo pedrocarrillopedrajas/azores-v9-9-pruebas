@@ -1,0 +1,1 @@
+V9.31 PRUEBAS: Selector de foto nativo de iPhone/iPad directamente desde Seleccionar foto. Sin menu intermedio. No elimina fotos ni cambia datos.
