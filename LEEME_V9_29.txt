@@ -1,0 +1,1 @@
+AZORES V9.29 PRUEBAS. Dos entradas: Fototeca (sin capture) y Camara (capture=environment). Las nuevas fotos se comprimen y suben a Storage, con verificacion de URL firmada antes de guardar. NO elimina fotos antiguas ni datos. Probar primero en repositorio de pruebas. No desplegar en definitiva hasta verificar el bucket.

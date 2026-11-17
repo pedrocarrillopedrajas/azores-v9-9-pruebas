@@ -64,7 +64,7 @@
       </div>
       <label>Forma de pago<select name="purchaseMethod"><option value="Vinted">Saldo de Vinted</option><option value="Personal">Dinero personal (aportación de capital)</option></select></label>
       <label>Estado del producto<select name="status"><option>Por recibir</option><option>Por subir</option><option selected>Sin vender</option><option>Vendido</option></select></label>
-      <label class="photo-picker">Fotografía del producto <span>(opcional)</span><input name="photo" type="file" accept="image/*"><small>Una foto pequeña para reconocerlo en el inventario.</small></label>
+      <div class="photo-picker"><strong>Fotografía del producto (opcional)</strong><div class="form-grid"><label>Elegir de la fototeca<input name="photo" type="file" accept="image/*"></label><label>Hacer foto<input name="photoCamera" type="file" accept="image/*" capture="environment"></label></div><small>Se optimiza y se sube a Supabase Storage al guardar.</small></div>
       <div id="photoPreview" class="photo-preview"></div><button type="button" class="secondary" id="removeProductPhoto" hidden>Eliminar fotografía</button><p id="productFormMessage" role="status" aria-live="polite" style="font-size:.85rem"></p>
       <div class="dialog-actions"><button type="button" class="secondary" id="cancelDialog">Cancelar</button><button type="submit" class="primary" id="saveProductButton">Guardar producto</button></div>
     </form>

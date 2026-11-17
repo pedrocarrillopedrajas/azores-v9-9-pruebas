@@ -36,6 +36,7 @@ async function uploadProductPhoto(dataUrl,productId){
  for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
  const path=cloudSession.user.id+"/"+productId+"-"+crypto.randomUUID()+".jpg";
  await photoStorageFetch("/storage/v1/object/"+PHOTO_BUCKET+"/"+path,{method:"POST",headers:{"Content-Type":"image/jpeg","x-upsert":"false"},body:new Blob([bytes],{type:"image/jpeg"})});
+ await resolvePhoto(PHOTO_PREFIX+path); // Confirma que Storage permite leer la foto antes de guardar el producto.
  return PHOTO_PREFIX+path;
 }
 async function resolvePhoto(value){
@@ -95,7 +96,7 @@ async function startCloud(){
 }
 function signOutCloud(){
  if(cloudDirty||cloudSaving){alert("Hay cambios sin sincronizar. Reintenta la sincronización antes de salir.");return;}
- cloudReady=false;cloudSession=null;localStorage.removeItem(SESSION_KEY);
+ cloudReady=false;cloudSession=null;photoUrlCache.clear();localStorage.removeItem(SESSION_KEY);
  products=[];finances={opening:{Aurora:0,Pedro:0},contributions:[],withdrawals:[],capitalRepayments:[]};
  localStorage.removeItem(KEY);localStorage.removeItem(FIN_KEY);setCloudLock(true);
  document.getElementById("loginForm").reset();document.getElementById("loginError").textContent="";
@@ -345,7 +346,7 @@ function updateProductPhotoPreview(){
 }
 $("#removeProductPhoto").addEventListener("click",()=>{
  photoData="";
- $("#productForm [name=photo]").value="";
+ $("#productForm [name=photo]").value="";$("#productForm [name=photoCamera]").value="";
  updateProductPhotoPreview();
  $("#productFormMessage").textContent="Fotografía eliminada. Pulsa Guardar cambios para confirmar.";
 });
@@ -364,7 +365,7 @@ async function compressProductPhoto(file){
   return canvas.toDataURL("image/jpeg",0.68);
  }finally{URL.revokeObjectURL(url);}
 }
-$("#productForm [name=photo]").addEventListener("change",e=>{
+function onProductPhotoSelected(e){
  const f=e.target.files[0];if(!f)return;
  if(!f.type.startsWith("image/")){$("#productFormMessage").textContent="Selecciona una imagen válida.";return;}
  // Reducir fotos de cámara antes de almacenarlas o enviarlas a Supabase.
@@ -375,7 +376,9 @@ $("#productForm [name=photo]").addEventListener("change",e=>{
   $("#saveProductButton").disabled=false;
   $("#productFormMessage").textContent="Fotografía optimizada. Pulsa Guardar cambios.";
  }).catch(err=>{$("#saveProductButton").disabled=false;$("#productFormMessage").textContent="No se pudo preparar la fotografía: "+err.message;});
-});
+}
+$("#productForm [name=photo]").addEventListener("change",onProductPhotoSelected);
+$("#productForm [name=photoCamera]").addEventListener("change",onProductPhotoSelected);
 $("#view").addEventListener("click",e=>{const b=e.target.closest("[data-edit]");if(b)openDialog(b.dataset.edit);const sell=e.target.closest("[data-sell]");if(sell)openSaleDialog(sell.dataset.sell);const editSale=e.target.closest("[data-sale-edit]");if(editSale)openSaleDialog(editSale.dataset.saleEdit,true);const cancel=e.target.closest("[data-sale-cancel]");if(cancel)cancelSale(cancel.dataset.saleCancel);const ship=e.target.closest("[data-ship-edit]");if(ship)openShippingDialog(ship.dataset.shipEdit);const del=e.target.closest("[data-delete]");if(del)deletePurchase(del.dataset.delete)});
 function deletePurchase(id){
  if(!cloudReady){alert("Espera a que se conecte Supabase antes de eliminar una compra.");return;}
