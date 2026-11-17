@@ -1,0 +1,1 @@
+V9.28: corrige fallo V9.27 que sustituía las fotos Base64 antiguas por src vacío. Conserva Storage para fotos nuevas. No restaura ni modifica datos.

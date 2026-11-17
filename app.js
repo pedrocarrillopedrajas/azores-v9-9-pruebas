@@ -49,6 +49,7 @@ async function resolvePhoto(value){
 function hydrateStoredPhotos(root=document){
  root.querySelectorAll("img[data-storage-photo]").forEach(async img=>{
   const value=img.getAttribute("data-storage-photo");
+  if(!photoIsStored(value))return; // No tocar fotos antiguas Base64.
   try{const url=await resolvePhoto(value);if(img.isConnected&&img.getAttribute("data-storage-photo")===value)img.src=url;}
   catch(err){console.warn("AZORES: no se pudo cargar fotografía",err);}
  });
