@@ -150,8 +150,6 @@ function render(){
  document.querySelector(".content-card").classList.toggle("home-navigation",home);
  document.querySelector(".section-heading").hidden=home;
  document.querySelector(".welcome").hidden=home;
- document.querySelector(".notice").hidden=home;
- document.querySelector(".backup-panel").hidden=home;
  document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===activeTab));
  const view=$("#view");
  if(home){view.innerHTML="";return;}
