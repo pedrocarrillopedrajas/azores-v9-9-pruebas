@@ -1,0 +1,1 @@
+V9.33 PRUEBAS: lee fotos privadas desde Storage usando GET autenticado y muestra blob local en Safari. No borra fotos ni datos. Prueba primero en repositorio de pruebas.

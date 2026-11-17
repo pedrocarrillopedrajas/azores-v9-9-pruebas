@@ -46,9 +46,13 @@ async function uploadProductPhoto(dataUrl,productId){
 async function resolvePhoto(value){
  if(!photoIsStored(value))return value||"";
  const path=photoPath(value);if(photoUrlCache.has(path))return photoUrlCache.get(path);
- const r=await photoStorageFetch("/storage/v1/object/sign/"+PHOTO_BUCKET+"/"+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({expiresIn:3600})});
- const data=await r.json();const url=SUPABASE_URL+data.signedURL;
- photoUrlCache.set(path,url);setTimeout(()=>photoUrlCache.delete(path),50*60*1000);
+ // Leer el objeto privado con la misma sesión autenticada que permite subirlo.
+ // La URL blob evita problemas de visualización de enlaces firmados en Safari iOS.
+ const response=await photoStorageFetch("/storage/v1/object/authenticated/"+PHOTO_BUCKET+"/"+path);
+ const blob=await response.blob();
+ if(!blob.size)throw Error("La fotografía descargada está vacía");
+ const url=URL.createObjectURL(blob);
+ photoUrlCache.set(path,url);
  return url;
 }
 function hydrateStoredPhotos(root=document){
@@ -100,7 +104,7 @@ async function startCloud(){
 }
 function signOutCloud(){
  if(cloudDirty||cloudSaving){alert("Hay cambios sin sincronizar. Reintenta la sincronización antes de salir.");return;}
- cloudReady=false;cloudSession=null;photoUrlCache.clear();localStorage.removeItem(SESSION_KEY);
+ cloudReady=false;cloudSession=null;for(const url of photoUrlCache.values())if(url.startsWith("blob:"))URL.revokeObjectURL(url);photoUrlCache.clear();localStorage.removeItem(SESSION_KEY);
  products=[];finances={opening:{Aurora:0,Pedro:0},contributions:[],withdrawals:[],capitalRepayments:[]};
  localStorage.removeItem(KEY);localStorage.removeItem(FIN_KEY);setCloudLock(true);
  document.getElementById("loginForm").reset();document.getElementById("loginError").textContent="";
