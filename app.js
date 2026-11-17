@@ -155,15 +155,15 @@ function render(){
  if(home){view.innerHTML="";return;}
  if(activeTab==="Compras"||activeTab==="Inventario"){
    const rows=products.filter(p=>activeTab==="Compras"||!isSold(p));
-   if(activeTab==="Compras")rows.sort((a,b)=>String(b.purchaseDate||"").localeCompare(String(a.purchaseDate||"")));
+   rows.sort((a,b)=>String(b.purchaseDate||"").localeCompare(String(a.purchaseDate||"")) || products.indexOf(b)-products.indexOf(a));
    if(!rows.length){view.innerHTML=`<div class="empty"><div class="symbol">▧</div><h3>${activeTab==="Compras"?"Todavía no hay compras":"Tu inventario está vacío"}</h3><p>Añade el primer producto para empezar a organizar AZORES.</p><button class="primary" id="emptyAdd">＋ Añadir producto</button></div>`;$("#emptyAdd").onclick=()=>openDialog();return}
-   view.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Compra</th><th>Coste</th><th>Cuenta</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${rows.map(p=>`<tr><td><div class="product-cell">${p.photo?`<img class="thumb" src="${p.photo}">`:`<span class="thumb">▧</span>`}<strong>${esc(p.name)}</strong></div></td><td>${p.purchaseDate||"—"}</td><td>${money(p.purchasePrice)}</td><td>${esc(p.account||"—")}</td><td><span class="pill">${esc(productStatus(p))}</span></td><td><div class="action-group"><button type="button" class="edit-product" data-edit="${esc(p.id)}">Editar</button>${!isSold(p)?`<button type="button" class="edit-product" data-sell="${esc(p.id)}">Vender</button><button type="button" class="edit-product delete-product" data-delete="${esc(p.id)}" aria-label="Eliminar compra de ${esc(p.name)}">Eliminar</button>`:""}</div></td></tr>`).join("")}</tbody></table></div>`;
+   view.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Compra</th><th>Coste</th><th>Cuenta</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${rows.map(p=>`<tr><td><div class="product-cell">${p.photo?`<img class="thumb zoomable-photo" src="${p.photo}" alt="Ampliar foto de ${esc(p.name)}" tabindex="0" role="button" loading="lazy">`:`<span class="thumb">▧</span>`}<strong>${esc(p.name)}</strong></div></td><td>${p.purchaseDate||"—"}</td><td>${money(p.purchasePrice)}</td><td>${esc(p.account||"—")}</td><td><span class="pill">${esc(productStatus(p))}</span></td><td><div class="action-group"><button type="button" class="edit-product" data-edit="${esc(p.id)}">Editar</button>${!isSold(p)?`<button type="button" class="edit-product" data-sell="${esc(p.id)}">Vender</button><button type="button" class="edit-product delete-product" data-delete="${esc(p.id)}" aria-label="Eliminar compra de ${esc(p.name)}">Eliminar</button>`:""}</div></td></tr>`).join("")}</tbody></table></div>`;
  }else if(activeTab==="Ventas"){
    const sold=products.filter(isSold);
    const byDate=(a,b)=>String(b.saleDate||"").localeCompare(String(a.saleDate||""));
    const pending=sold.filter(p=>p.paymentStatus!=="Cobrado").sort(byDate);
    const paid=sold.filter(p=>p.paymentStatus==="Cobrado").sort(byDate);
-   const saleRow=p=>`<tr><td class="sale-product"><div class="product-cell">${p.photo?`<img class="thumb" src="${p.photo}" alt="Foto de ${esc(p.name)}" loading="lazy">`:`<span class="thumb" aria-hidden="true">▧</span>`}<strong>${esc(p.name)}</strong></div></td><td>${esc(p.saleDate||"—")}</td><td>${money(p.salePrice)}</td><td>${esc(p.buyer||"—")}</td><td><span class="pill">${esc(p.paymentStatus||"—")}</span></td><td>${money(Number(p.salePrice)-Number(p.purchasePrice||0))}</td><td><div class="action-group"><button class="edit-product" data-sale-edit="${esc(p.id)}">Editar venta</button><button class="edit-product" data-sale-cancel="${esc(p.id)}">Anular venta</button></div></td></tr>`;
+   const saleRow=p=>`<tr><td class="sale-product"><div class="product-cell">${p.photo?`<img class="thumb zoomable-photo" src="${p.photo}" alt="Ampliar foto de ${esc(p.name)}" tabindex="0" role="button" loading="lazy">`:`<span class="thumb" aria-hidden="true">▧</span>`}<strong>${esc(p.name)}</strong></div></td><td>${esc(p.saleDate||"—")}</td><td>${money(p.salePrice)}</td><td>${esc(p.buyer||"—")}</td><td><span class="pill">${esc(p.paymentStatus||"—")}</span></td><td>${money(Number(p.salePrice)-Number(p.purchasePrice||0))}</td><td><div class="action-group"><button class="edit-product" data-sale-edit="${esc(p.id)}">Editar venta</button><button class="edit-product" data-sale-cancel="${esc(p.id)}">Anular venta</button></div></td></tr>`;
    const current=salesGroupOpen==="pending"?pending:salesGroupOpen==="paid"?paid:null;
    view.innerHTML=`<div class="action-group sales-toolbar"><button class="primary" id="addSale" ${products.some(p=>!isSold(p))?"":"disabled"}>＋ Registrar venta</button><button type="button" class="sales-group-toggle ${salesGroupOpen==="pending"?"selected":""}" data-sales-group="pending" aria-expanded="${salesGroupOpen==="pending"}">Pendientes (${pending.length}) <span aria-hidden="true">${salesGroupOpen==="pending"?"⌃":"⌄"}</span></button><button type="button" class="sales-group-toggle ${salesGroupOpen==="paid"?"selected":""}" data-sales-group="paid" aria-expanded="${salesGroupOpen==="paid"}">Cobradas (${paid.length}) <span aria-hidden="true">${salesGroupOpen==="paid"?"⌃":"⌄"}</span></button></div>${current?(current.length?`<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Fecha</th><th>Precio venta</th><th>Comprador</th><th>Cobro</th><th>Beneficio</th><th>Acciones</th></tr></thead><tbody>${current.map(saleRow).join("")}</tbody></table></div>`:`<div class="simple-panel"><strong>No hay ventas ${salesGroupOpen==="paid"?"cobradas":"pendientes de cobro"}</strong></div>`):`<div class="simple-panel sales-empty-hint">${sold.length?"Selecciona Pendientes o Cobradas para ver las ventas.":"Aún no hay ventas. Pulsa Registrar venta para empezar."}</div>`}`;
    const add=$("#addSale");if(add)add.onclick=()=>openSaleDialog();
@@ -451,4 +451,18 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
    render();queueCloudSave();alert("Copia restaurada. Comprueba Compras, Cuentas y Beneficios. Espera a que indique sincronizado antes de cerrar.");
   }catch(e){alert("No se ha restaurado la copia: "+e.message)}
  });
+})();
+
+// Visor de fotografías: no modifica los datos ni las imágenes almacenadas.
+(function(){
+ const viewer=document.createElement("dialog");
+ viewer.className="azores-photo-viewer";
+ viewer.setAttribute("aria-label","Fotografía ampliada del producto");
+ viewer.innerHTML='<button type="button" class="azores-photo-close" aria-label="Cerrar fotografía">×</button><img alt="Fotografía ampliada">';
+ document.body.appendChild(viewer);
+ const close=()=>viewer.close();
+ viewer.querySelector("button").addEventListener("click",close);
+ viewer.addEventListener("click",e=>{if(e.target===viewer)close()});
+ document.addEventListener("click",e=>{const photo=e.target.closest("img.zoomable-photo");if(!photo)return;viewer.querySelector("img").src=photo.src;viewer.querySelector("img").alt=photo.alt;viewer.showModal()});
+ document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches("img.zoomable-photo")){e.preventDefault();e.target.click()}});
 })();

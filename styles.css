@@ -106,3 +106,10 @@ body:has(#appShell[hidden]) .header-actions .backup-dropdown{display:none}
 .secondary:not(:disabled):hover{box-shadow:inset 0 -2px 0 #AA151B60}
 .secondary:focus-visible{outline:2px solid #AA151B;outline-offset:2px}
 @media(max-width:760px){.brand-title{gap:6px}.spain-flag{width:20px;height:14px}.spain-stripe{max-width:99px}}
+
+/* Ampliación de fotografías en compras, inventario y ventas */
+.zoomable-photo{cursor:zoom-in;transition:transform .15s ease}.zoomable-photo:hover{transform:scale(1.08)}.zoomable-photo:focus-visible{outline:3px solid #bb9b52;outline-offset:3px}
+.azores-photo-viewer{width:min(94vw,960px);max-width:94vw;max-height:94vh;padding:40px 12px 12px;background:transparent;box-shadow:none;overflow:visible;text-align:center}
+.azores-photo-viewer::backdrop{background:rgba(8,18,23,.9)}
+.azores-photo-viewer img{display:block;margin:auto;max-width:100%;max-height:calc(94vh - 55px);width:auto;height:auto;object-fit:contain;border-radius:10px}
+.azores-photo-close{position:absolute;right:8px;top:0;border:0;border-radius:50%;background:#fff;color:#17242c;width:36px;height:36px;font-size:27px;line-height:30px;cursor:pointer}

@@ -1,0 +1,4 @@
+AZORES V9.23 - PRUEBAS
+1. Pulsa una fotografía en Compras, Inventario o Ventas para ampliarla. Cierra con X, pulsando fuera o con Escape.
+2. Inventario ordenado por fecha de compra descendente; a igualdad de fecha, primero el registro más reciente.
+No se cambian datos, cobros, beneficios ni sincronización. Publicar primero en repositorio de pruebas.
