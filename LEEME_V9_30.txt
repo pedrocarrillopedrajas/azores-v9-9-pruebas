@@ -1,0 +1,1 @@
+V9.30 de pruebas: selector de foto con menú Fototeca/Cámara y verificación de lectura real de Storage. NO elimina fotos antiguas ni altera otros datos.

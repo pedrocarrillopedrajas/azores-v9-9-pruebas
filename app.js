@@ -36,7 +36,9 @@ async function uploadProductPhoto(dataUrl,productId){
  for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
  const path=cloudSession.user.id+"/"+productId+"-"+crypto.randomUUID()+".jpg";
  await photoStorageFetch("/storage/v1/object/"+PHOTO_BUCKET+"/"+path,{method:"POST",headers:{"Content-Type":"image/jpeg","x-upsert":"false"},body:new Blob([bytes],{type:"image/jpeg"})});
- await resolvePhoto(PHOTO_PREFIX+path); // Confirma que Storage permite leer la foto antes de guardar el producto.
+ const signed=await resolvePhoto(PHOTO_PREFIX+path);
+ const check=await fetch(signed,{method:"GET",cache:"no-store"});
+ if(!check.ok||!(check.headers.get("content-type")||"").startsWith("image/"))throw Error("La foto se subió, pero Storage no permite verla (HTTP "+check.status+"). No se ha cambiado el producto.");
  return PHOTO_PREFIX+path;
 }
 async function resolvePhoto(value){
@@ -377,6 +379,9 @@ function onProductPhotoSelected(e){
   $("#productFormMessage").textContent="Fotografía optimizada. Pulsa Guardar cambios.";
  }).catch(err=>{$("#saveProductButton").disabled=false;$("#productFormMessage").textContent="No se pudo preparar la fotografía: "+err.message;});
 }
+$("#chooseProductPhoto").addEventListener("click",()=>{$("#photoChoiceMenu").hidden=!$("#photoChoiceMenu").hidden;});
+$("#chooseGallery").addEventListener("click",()=>{$("#photoChoiceMenu").hidden=true;$("#productForm [name=photo]").click();});
+$("#chooseCamera").addEventListener("click",()=>{$("#photoChoiceMenu").hidden=true;$("#productForm [name=photoCamera]").click();});
 $("#productForm [name=photo]").addEventListener("change",onProductPhotoSelected);
 $("#productForm [name=photoCamera]").addEventListener("change",onProductPhotoSelected);
 $("#view").addEventListener("click",e=>{const b=e.target.closest("[data-edit]");if(b)openDialog(b.dataset.edit);const sell=e.target.closest("[data-sell]");if(sell)openSaleDialog(sell.dataset.sell);const editSale=e.target.closest("[data-sale-edit]");if(editSale)openSaleDialog(editSale.dataset.saleEdit,true);const cancel=e.target.closest("[data-sale-cancel]");if(cancel)cancelSale(cancel.dataset.saleCancel);const ship=e.target.closest("[data-ship-edit]");if(ship)openShippingDialog(ship.dataset.shipEdit);const del=e.target.closest("[data-delete]");if(del)deletePurchase(del.dataset.delete)});
