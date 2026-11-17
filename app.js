@@ -36,9 +36,11 @@ async function uploadProductPhoto(dataUrl,productId){
  for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
  const path=cloudSession.user.id+"/"+productId+"-"+crypto.randomUUID()+".jpg";
  await photoStorageFetch("/storage/v1/object/"+PHOTO_BUCKET+"/"+path,{method:"POST",headers:{"Content-Type":"image/jpeg","x-upsert":"false"},body:new Blob([bytes],{type:"image/jpeg"})});
- const signed=await resolvePhoto(PHOTO_PREFIX+path);
- const check=await fetch(signed,{method:"GET",cache:"no-store"});
- if(!check.ok||!(check.headers.get("content-type")||"").startsWith("image/"))throw Error("La foto se subió, pero Storage no permite verla (HTTP "+check.status+"). No se ha cambiado el producto.");
+ // No descargar la URL firmada con fetch: en Safari/iOS puede fallar por CORS
+ // aunque la imagen sea accesible en un elemento <img>.
+ // La lectura autorizada se comprueba creando la URL firmada.
+ try{await resolvePhoto(PHOTO_PREFIX+path);}
+ catch(error){throw Error("Foto subida a Storage, pero no se pudo generar el acceso de lectura: "+error.message);}
  return PHOTO_PREFIX+path;
 }
 async function resolvePhoto(value){

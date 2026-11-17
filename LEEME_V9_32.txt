@@ -1,0 +1,1 @@
+V9.32 PRUEBAS: elimina la comprobación fetch de la URL firmada que podía fallar en Safari por CORS. Mantiene creación de URL firmada, selector nativo y todos los datos. No borra fotos antiguas. Probar antes de definitiva.
