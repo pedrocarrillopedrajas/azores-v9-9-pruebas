@@ -21,6 +21,7 @@ async function cloudFetch(path,options={}){
 // V9.27: fotos privadas en Supabase Storage. Las fotos antiguas Base64 se conservan.
 const PHOTO_BUCKET="azores-fotos", PHOTO_PREFIX="storage:";
 const photoUrlCache=new Map();
+const pendingPhotoDeletions=new Set();
 function photoIsStored(value){return typeof value==="string"&&value.startsWith(PHOTO_PREFIX);}
 function photoPath(value){return value.slice(PHOTO_PREFIX.length);}
 function photoDisplay(value){return photoIsStored(value)?(photoUrlCache.get(photoPath(value))||""):value||"";}
@@ -63,6 +64,23 @@ function hydrateStoredPhotos(root=document){
   catch(err){console.warn("AZORES: no se pudo cargar fotografía",err);}
  });
 }
+// Solo borrar archivos propios, tras confirmar que el estado nuevo se guardó en Supabase.
+function scheduleOldPhotoCleanup(oldPhoto,newPhoto){
+ if(photoIsStored(oldPhoto)&&oldPhoto!==newPhoto)pendingPhotoDeletions.add(photoPath(oldPhoto));
+}
+async function cleanupUnusedPhotos(){
+ if(!cloudSession?.user?.id)return;
+ const inUse=new Set(products.filter(p=>photoIsStored(p.photo)).map(p=>photoPath(p.photo)));
+ for(const path of [...pendingPhotoDeletions]){
+  if(inUse.has(path)){pendingPhotoDeletions.delete(path);continue;}
+  if(!path.startsWith(cloudSession.user.id+"/")){pendingPhotoDeletions.delete(path);continue;}
+  try{
+   await photoStorageFetch("/storage/v1/object/"+PHOTO_BUCKET+"/"+path.split("/").map(encodeURIComponent).join("/"),{method:"DELETE"});
+   const url=photoUrlCache.get(path);if(url?.startsWith("blob:"))URL.revokeObjectURL(url);
+   photoUrlCache.delete(path);pendingPhotoDeletions.delete(path);
+  }catch(error){console.warn("AZORES: foto desvinculada, pero no se pudo borrar de Storage",error);}
+ }
+}
 function queueCloudSave(){
  if(!cloudReady)return;
  cloudDirty=true;setCloudStatus("Cambios pendientes de sincronizar…");
@@ -76,6 +94,8 @@ async function flushCloudSave(){
  try{
   await cloudFetch("/rest/v1/azores_state?on_conflict=user_id",{method:"POST",headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({user_id:cloudSession.user.id,data:snapshot,updated_at:new Date().toISOString()})});
   setCloudStatus(cloudDirty?"Cambios pendientes de sincronizar…":"✓ Sincronizado en Supabase");
+  // Eliminar únicamente tras confirmación de guardado; nunca antes.
+  if(!cloudDirty)await cleanupUnusedPhotos();
  }catch(e){cloudDirty=true;setCloudStatus("⚠ Sin sincronizar: "+e.message+". Pulsa Reintentar.");}
  finally{cloudSaving=false;if(cloudDirty&&navigator.onLine&&cloudStatus()?.textContent?.startsWith("Cambios"))setTimeout(flushCloudSave,300);}
 }
@@ -397,6 +417,7 @@ function deletePurchase(id){
  if(isSold(p)){alert("Esta compra tiene una venta registrada. Primero anula la venta si realmente quieres eliminar la compra.");return;}
  if(!confirm(`¿Eliminar definitivamente la compra de "${p.name}"?\n\nSe quitará también del inventario y se recalcularán las cuentas. Esta acción no se puede deshacer desde la aplicación.\n\n¿Quieres continuar?`))return;
  products=products.filter(x=>x.id!==id);
+ scheduleOldPhotoCleanup(p.photo,"");
  save();
 }
 $("#productForm").addEventListener("submit",async e=>{
@@ -419,7 +440,7 @@ $("#productForm").addEventListener("submit",async e=>{
  }catch(error){$("#productFormMessage").textContent="No se ha guardado: "+error.message;button.disabled=false;return;}
  const f=new FormData(form);
  const fields={name:f.get("name"),purchaseDate:f.get("purchaseDate"),purchasePrice:f.get("purchasePrice"),origin:f.get("origin"),account:f.get("account"),purchaseMethod:f.get("purchaseMethod"),status:editingId&&products.find(x=>x.id===editingId)&&isSold(products.find(x=>x.id===editingId))?"Vendido":f.get("status"),photo:finalPhoto};
- if(editingId){const p=products.find(item=>item.id===editingId);if(!p)return;Object.assign(p,fields)}
+ if(editingId){const p=products.find(item=>item.id===editingId);if(!p)return;const previousPhoto=p.photo;Object.assign(p,fields);scheduleOldPhotoCleanup(previousPhoto,finalPhoto)}
  else products.push({id:productId,...fields,salePrice:""});
  try{save();dialog.close();activeTab="Inventario";render();}
  catch(error){$("#productFormMessage").textContent="No se pudieron guardar los cambios: "+error.message;}
