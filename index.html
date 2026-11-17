@@ -13,7 +13,10 @@
 <body>
   <header class="topbar">
     <div class="brand"><img class="brand-logo" src="logo-azores.jpg" alt="Logo AZORES"><div><strong>AZORES</strong><small>GESTIÓN DE COMPRAVENTA</small></div></div>
-    <span class="prototype-tag">GESTIÓN PRIVADA</span>
+    <div class="header-actions"><span class="prototype-tag">GESTIÓN PRIVADA</span><details class="backup-dropdown">
+          <summary aria-label="Abrir copias de seguridad">▣ Copias <span aria-hidden="true" class="backup-chevron">⌄</span></summary>
+          <section class="backup-panel" aria-label="Protección de datos"><div><strong>Protección de datos</strong><p>Guarda una copia de todas las operaciones y cuentas, incluidas las fotos. Puedes restaurarla más adelante.</p></div><div class="action-group"><button type="button" class="primary" id="exportBackup">Descargar copia</button><button type="button" class="secondary" id="importBackup">Restaurar copia</button><input type="file" id="backupFile" accept=".json,application/json" hidden><button type="button" class="secondary" id="logoutButton">Cerrar sesión</button></div></section>
+        </details></div>
   </header>
   <section id="loginPanel" class="login-panel">
     <div class="login-card"><img class="login-logo" src="logo-azores.jpg" alt="Logo AZORES"><h1>Entrar en AZORES</h1>
@@ -23,15 +26,11 @@
     <button class="primary" type="submit" id="loginButton">Entrar</button></form><p id="loginError" role="alert"></p></div>
   </section>
   <main class="shell" id="appShell" hidden>
-    <div class="cloud-bar"><span id="cloudStatus" role="status">Conectando…</span><div class="action-group"><button type="button" class="secondary" id="retrySync">Reintentar</button><button type="button" class="secondary" id="logoutButton">Cerrar sesión</button></div></div>
+    <div class="cloud-bar" hidden><span id="cloudStatus" role="status">Conectando…</span><div class="action-group"><button type="button" class="secondary" id="retrySync">Reintentar</button></div></div>
     <section class="welcome">
       <div><p class="eyebrow">TU NEGOCIO, EN ORDEN</p><h1>Panel principal</h1><p class="muted">Todo lo importante de AZORES, de un vistazo.</p></div>
       <div class="welcome-actions">
         <button class="primary" id="newProductTop">＋ Añadir producto</button>
-        <details class="backup-dropdown">
-          <summary aria-label="Abrir protección de datos">▣ Copias <span aria-hidden="true" class="backup-chevron">⌄</span></summary>
-          <section class="backup-panel" aria-label="Protección de datos"><div><strong>Protección de datos</strong><p>Guarda una copia de todas las operaciones y cuentas, incluidas las fotos. Puedes restaurarla más adelante.</p></div><div class="action-group"><button type="button" class="primary" id="exportBackup">Descargar copia</button><button type="button" class="secondary" id="importBackup">Restaurar copia</button><input type="file" id="backupFile" accept=".json,application/json" hidden></div></section>
-        </details>
       </div>
     </section>
     <section class="home-summary" id="homeSummary" aria-label="Resumen de AZORES">

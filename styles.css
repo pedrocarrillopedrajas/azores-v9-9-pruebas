@@ -77,3 +77,20 @@ dialog::backdrop{background:#102B2477}
 .backup-dropdown .backup-panel .action-group{display:flex;flex-wrap:wrap;gap:8px}
 .backup-dropdown .backup-panel .action-group button{flex:1 1 130px}
 @media(max-width:650px){.welcome-actions{width:100%;justify-content:space-between}.backup-dropdown .backup-panel{right:0}}
+
+/* V9.19: controles de copias siempre visibles y estado de sincronización discreto */
+.cloud-bar{background:transparent;border:0;border-radius:0;padding:0 0 10px;margin-bottom:12px;min-height:42px;font-size:12px;color:#45685c}
+.cloud-bar>.action-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cloud-bar>.action-group>.secondary{font-size:12px;padding:8px 11px}
+.cloud-bar .backup-dropdown>summary{min-height:34px;padding:7px 12px}
+@media(max-width:650px){.cloud-bar{align-items:flex-start}.cloud-bar>.action-group{justify-content:flex-end}}
+
+/* V9.20: Copias junto a Gestion privada, sin barra visual Supabase */
+.cloud-bar{display:none!important}
+.header-actions{display:flex;align-items:center;gap:10px}
+.header-actions .backup-dropdown{z-index:40}
+.header-actions .backup-dropdown>summary{min-height:30px;padding:5px 10px;background:transparent;color:#E2D4AD;border:1px solid #9D8759;border-radius:30px;font-size:10px;letter-spacing:1px}
+.header-actions .backup-dropdown[open]>summary{background:#23564b}
+.header-actions .backup-dropdown .backup-panel{color:#163f36;letter-spacing:normal;z-index:50}
+body:has(#appShell[hidden]) .header-actions .backup-dropdown{display:none}
+@media(max-width:650px){.header-actions{gap:6px}.header-actions .backup-dropdown>summary{font-size:9px;padding:5px 8px}.header-actions .backup-dropdown .backup-panel{right:0}}
