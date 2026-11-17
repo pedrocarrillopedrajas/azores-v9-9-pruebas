@@ -1,0 +1,5 @@
+AZORES V9.24 - PRUEBAS
+Se elimina capture="environment" del selector de fotografía, permitiendo elegir imágenes de la galería/archivos o cámara según las opciones ofrecidas por el dispositivo.
+Se actualiza la versión de caché del service worker.
+No se modifica la lógica de compras, ventas, cobros, fotos almacenadas ni sincronización.
+Publicar primero en repositorio de pruebas y comprobar en iPhone, iPad y PC.
