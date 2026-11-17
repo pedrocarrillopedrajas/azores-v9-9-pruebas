@@ -1,0 +1,7 @@
+AZORES V9.27 - PRUEBAS
+- Nuevas fotografías se comprimen y suben al bucket privado azores-fotos, bajo la carpeta del usuario autenticado.
+- Las fotos antiguas Base64 siguen visibles; NO se migran automáticamente en esta versión.
+- Las fotos de Storage se muestran mediante enlaces firmados temporales.
+- No se borran objetos antiguos automáticamente al reemplazar/eliminar una foto (limpieza pendiente).
+- No instalar en repositorio definitivo hasta verificar.
+- Precaución: el repositorio de pruebas usa el mismo backend Supabase que el definitivo si se inicia sesión con la misma cuenta; NO modificar datos reales durante la prueba.

@@ -18,6 +18,41 @@ async function cloudFetch(path,options={}){
  if(!r.ok){let detail="";try{const j=await r.json();detail=j.message||j.msg||j.error_description||j.error||""}catch(_){}throw Error(detail||"Error de conexión ("+r.status+")");}
  return r;
 }
+// V9.27: fotos privadas en Supabase Storage. Las fotos antiguas Base64 se conservan.
+const PHOTO_BUCKET="azores-fotos", PHOTO_PREFIX="storage:";
+const photoUrlCache=new Map();
+function photoIsStored(value){return typeof value==="string"&&value.startsWith(PHOTO_PREFIX);}
+function photoPath(value){return value.slice(PHOTO_PREFIX.length);}
+function photoDisplay(value){return photoIsStored(value)?(photoUrlCache.get(photoPath(value))||""):value||"";}
+async function photoStorageFetch(path,options={}){
+ const request=async()=>fetch(SUPABASE_URL+path,{...options,headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+cloudSession.access_token,...(options.headers||{})}});
+ let response=await request();if(response.status===401){await refreshCloudSession();response=await request();}
+ if(!response.ok){let message="Error de Storage ("+response.status+")";try{const d=await response.json();message=d.message||d.error||message;}catch{}throw Error(message);}
+ return response;
+}
+async function uploadProductPhoto(dataUrl,productId){
+ if(!cloudSession?.user?.id)throw Error("Inicia sesión para subir la foto");
+ const raw=atob(dataUrl.split(",")[1]);const bytes=new Uint8Array(raw.length);
+ for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+ const path=cloudSession.user.id+"/"+productId+"-"+crypto.randomUUID()+".jpg";
+ await photoStorageFetch("/storage/v1/object/"+PHOTO_BUCKET+"/"+path,{method:"POST",headers:{"Content-Type":"image/jpeg","x-upsert":"false"},body:new Blob([bytes],{type:"image/jpeg"})});
+ return PHOTO_PREFIX+path;
+}
+async function resolvePhoto(value){
+ if(!photoIsStored(value))return value||"";
+ const path=photoPath(value);if(photoUrlCache.has(path))return photoUrlCache.get(path);
+ const r=await photoStorageFetch("/storage/v1/object/sign/"+PHOTO_BUCKET+"/"+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({expiresIn:3600})});
+ const data=await r.json();const url=SUPABASE_URL+data.signedURL;
+ photoUrlCache.set(path,url);setTimeout(()=>photoUrlCache.delete(path),50*60*1000);
+ return url;
+}
+function hydrateStoredPhotos(root=document){
+ root.querySelectorAll("img[data-storage-photo]").forEach(async img=>{
+  const value=img.getAttribute("data-storage-photo");
+  try{const url=await resolvePhoto(value);if(img.isConnected&&img.getAttribute("data-storage-photo")===value)img.src=url;}
+  catch(err){console.warn("AZORES: no se pudo cargar fotografía",err);}
+ });
+}
 function queueCloudSave(){
  if(!cloudReady)return;
  cloudDirty=true;setCloudStatus("Cambios pendientes de sincronizar…");
@@ -133,6 +168,7 @@ function stats(){
 function isSold(p){return p.salePrice!==""&&p.salePrice!=null}
 function productStatus(p){return isSold(p)?"Vendido":(p.status||"Sin vender")}
 function render(){
+ queueMicrotask(()=>hydrateStoredPhotos(document));
  stats();$("#sectionTitle").textContent=activeTab;
  const home=activeTab==="Inicio";
  if(home && cataLastTab!=="Inicio") {
@@ -162,13 +198,13 @@ function render(){
    const rows=products.filter(p=>activeTab==="Compras"||!isSold(p));
    rows.sort((a,b)=>String(b.purchaseDate||"").localeCompare(String(a.purchaseDate||"")) || products.indexOf(b)-products.indexOf(a));
    if(!rows.length){view.innerHTML=`<div class="empty"><div class="symbol">▧</div><h3>${activeTab==="Compras"?"Todavía no hay compras":"Tu inventario está vacío"}</h3><p>Añade el primer producto para empezar a organizar AZORES.</p><button class="primary" id="emptyAdd">＋ Añadir producto</button></div>`;$("#emptyAdd").onclick=()=>openDialog();return}
-   view.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Compra</th><th>Coste</th><th>Cuenta</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${rows.map(p=>`<tr><td><div class="product-cell">${p.photo?`<img class="thumb zoomable-photo" src="${p.photo}" alt="Ampliar foto de ${esc(p.name)}" tabindex="0" role="button" loading="lazy">`:`<span class="thumb">▧</span>`}<strong>${esc(p.name)}</strong></div></td><td>${p.purchaseDate||"—"}</td><td>${money(p.purchasePrice)}</td><td>${esc(p.account||"—")}</td><td><span class="pill">${esc(productStatus(p))}</span></td><td><div class="action-group"><button type="button" class="edit-product" data-edit="${esc(p.id)}">Editar</button>${!isSold(p)?`<button type="button" class="edit-product" data-sell="${esc(p.id)}">Vender</button><button type="button" class="edit-product delete-product" data-delete="${esc(p.id)}" aria-label="Eliminar compra de ${esc(p.name)}">Eliminar</button>`:""}</div></td></tr>`).join("")}</tbody></table></div>`;
+   view.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Compra</th><th>Coste</th><th>Cuenta</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${rows.map(p=>`<tr><td><div class="product-cell">${p.photo?`<img class="thumb zoomable-photo" src="${esc(photoDisplay(p.photo))}" data-storage-photo="${photoIsStored(p.photo)?esc(p.photo):""}" alt="Ampliar foto de ${esc(p.name)}" tabindex="0" role="button" loading="lazy">`:`<span class="thumb">▧</span>`}<strong>${esc(p.name)}</strong></div></td><td>${p.purchaseDate||"—"}</td><td>${money(p.purchasePrice)}</td><td>${esc(p.account||"—")}</td><td><span class="pill">${esc(productStatus(p))}</span></td><td><div class="action-group"><button type="button" class="edit-product" data-edit="${esc(p.id)}">Editar</button>${!isSold(p)?`<button type="button" class="edit-product" data-sell="${esc(p.id)}">Vender</button><button type="button" class="edit-product delete-product" data-delete="${esc(p.id)}" aria-label="Eliminar compra de ${esc(p.name)}">Eliminar</button>`:""}</div></td></tr>`).join("")}</tbody></table></div>`;
  }else if(activeTab==="Ventas"){
    const sold=products.filter(isSold);
    const byDate=(a,b)=>String(b.saleDate||"").localeCompare(String(a.saleDate||""));
    const pending=sold.filter(p=>p.paymentStatus!=="Cobrado").sort(byDate);
    const paid=sold.filter(p=>p.paymentStatus==="Cobrado").sort(byDate);
-   const saleRow=p=>`<tr><td class="sale-product"><div class="product-cell">${p.photo?`<img class="thumb zoomable-photo" src="${p.photo}" alt="Ampliar foto de ${esc(p.name)}" tabindex="0" role="button" loading="lazy">`:`<span class="thumb" aria-hidden="true">▧</span>`}<strong>${esc(p.name)}</strong></div></td><td>${esc(p.saleDate||"—")}</td><td>${money(p.salePrice)}</td><td>${esc(p.buyer||"—")}</td><td><span class="pill">${esc(p.paymentStatus||"—")}</span></td><td>${money(Number(p.salePrice)-Number(p.purchasePrice||0))}</td><td><div class="action-group"><button class="edit-product" data-sale-edit="${esc(p.id)}">Editar venta</button><button class="edit-product" data-sale-cancel="${esc(p.id)}">Anular venta</button></div></td></tr>`;
+   const saleRow=p=>`<tr><td class="sale-product"><div class="product-cell">${p.photo?`<img class="thumb zoomable-photo" src="${esc(photoDisplay(p.photo))}" data-storage-photo="${photoIsStored(p.photo)?esc(p.photo):""}" alt="Ampliar foto de ${esc(p.name)}" tabindex="0" role="button" loading="lazy">`:`<span class="thumb" aria-hidden="true">▧</span>`}<strong>${esc(p.name)}</strong></div></td><td>${esc(p.saleDate||"—")}</td><td>${money(p.salePrice)}</td><td>${esc(p.buyer||"—")}</td><td><span class="pill">${esc(p.paymentStatus||"—")}</span></td><td>${money(Number(p.salePrice)-Number(p.purchasePrice||0))}</td><td><div class="action-group"><button class="edit-product" data-sale-edit="${esc(p.id)}">Editar venta</button><button class="edit-product" data-sale-cancel="${esc(p.id)}">Anular venta</button></div></td></tr>`;
    const current=salesGroupOpen==="pending"?pending:salesGroupOpen==="paid"?paid:null;
    view.innerHTML=`<div class="action-group sales-toolbar"><button class="primary" id="addSale" ${products.some(p=>!isSold(p))?"":"disabled"}>＋ Registrar venta</button><button type="button" class="sales-group-toggle ${salesGroupOpen==="pending"?"selected":""}" data-sales-group="pending" aria-expanded="${salesGroupOpen==="pending"}">Pendientes (${pending.length}) <span aria-hidden="true">${salesGroupOpen==="pending"?"⌃":"⌄"}</span></button><button type="button" class="sales-group-toggle ${salesGroupOpen==="paid"?"selected":""}" data-sales-group="paid" aria-expanded="${salesGroupOpen==="paid"}">Cobradas (${paid.length}) <span aria-hidden="true">${salesGroupOpen==="paid"?"⌃":"⌄"}</span></button></div>${current?(current.length?`<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Fecha</th><th>Precio venta</th><th>Comprador</th><th>Cobro</th><th>Beneficio</th><th>Acciones</th></tr></thead><tbody>${current.map(saleRow).join("")}</tbody></table></div>`:`<div class="simple-panel"><strong>No hay ventas ${salesGroupOpen==="paid"?"cobradas":"pendientes de cobro"}</strong></div>`):`<div class="simple-panel sales-empty-hint">${sold.length?"Selecciona Pendientes o Cobradas para ver las ventas.":"Aún no hay ventas. Pulsa Registrar venta para empezar."}</div>`}`;
    const add=$("#addSale");if(add)add.onclick=()=>openSaleDialog();
@@ -302,7 +338,8 @@ function openDialog(id=null){
 $("#newProduct").onclick=()=>openDialog();$("#newProductTop").onclick=()=>openDialog();$("#closeDialog").onclick=()=>dialog.close();$("#cancelDialog").onclick=()=>dialog.close();
 document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{activeTab=b.dataset.tab;if(activeTab==="Ventas")salesGroupOpen=null;render();if(activeTab==="Envíos")refreshVintedGoPreviews()}));
 function updateProductPhotoPreview(){
- $("#photoPreview").innerHTML=photoData?`<img src="${photoData}" alt="Vista previa">`:"";
+ $("#photoPreview").innerHTML=photoData?`<img src="${esc(photoDisplay(photoData))}" data-storage-photo="${photoIsStored(photoData)?esc(photoData):""}" alt="Vista previa">`:"";
+ hydrateStoredPhotos($("#photoPreview"));
  $("#removeProductPhoto").hidden=!photoData;
 }
 $("#removeProductPhoto").addEventListener("click",()=>{
@@ -349,7 +386,7 @@ function deletePurchase(id){
  products=products.filter(x=>x.id!==id);
  save();
 }
-$("#productForm").addEventListener("submit",e=>{
+$("#productForm").addEventListener("submit",async e=>{
  e.preventDefault();
  const form=e.currentTarget;
  if(!form.checkValidity()){
@@ -358,12 +395,22 @@ $("#productForm").addEventListener("submit",e=>{
   invalid?.focus();form.reportValidity();return;
  }
  if(!cloudReady){$("#productFormMessage").textContent="Espera a que AZORES conecte con la nube.";return;}
+ const button=$("#saveProductButton");button.disabled=true;
+ const productId=editingId||crypto.randomUUID();
+ let finalPhoto=photoData;
+ try{
+  if(typeof photoData==="string"&&photoData.startsWith("data:image/")){
+   $("#productFormMessage").textContent="Subiendo fotografía a Supabase…";
+   finalPhoto=await uploadProductPhoto(photoData,productId);
+  }
+ }catch(error){$("#productFormMessage").textContent="No se ha guardado: "+error.message;button.disabled=false;return;}
  const f=new FormData(form);
- const fields={name:f.get("name"),purchaseDate:f.get("purchaseDate"),purchasePrice:f.get("purchasePrice"),origin:f.get("origin"),account:f.get("account"),purchaseMethod:f.get("purchaseMethod"),status:editingId&&products.find(x=>x.id===editingId)&&isSold(products.find(x=>x.id===editingId))?"Vendido":f.get("status"),photo:photoData};
+ const fields={name:f.get("name"),purchaseDate:f.get("purchaseDate"),purchasePrice:f.get("purchasePrice"),origin:f.get("origin"),account:f.get("account"),purchaseMethod:f.get("purchaseMethod"),status:editingId&&products.find(x=>x.id===editingId)&&isSold(products.find(x=>x.id===editingId))?"Vendido":f.get("status"),photo:finalPhoto};
  if(editingId){const p=products.find(item=>item.id===editingId);if(!p)return;Object.assign(p,fields)}
- else products.push({id:crypto.randomUUID(),...fields,salePrice:""});
+ else products.push({id:productId,...fields,salePrice:""});
  try{save();dialog.close();activeTab="Inventario";render();}
  catch(error){$("#productFormMessage").textContent="No se pudieron guardar los cambios: "+error.message;}
+ finally{button.disabled=false;}
 });
 const saleDialog=$("#saleDialog"),saleForm=$("#saleForm");
 function openSaleDialog(id=null,edit=false){
@@ -473,7 +520,7 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
  function validProduct(p){return p&&typeof p==="object"&&!Array.isArray(p)&&typeof p.id==="string"&&p.id.length>0&&typeof p.name==="string"&&Number.isFinite(Number(p.purchasePrice??0));}
  exportButton.addEventListener("click",()=>{
   try{
-   const data={format:backupFormat,exportedAt:new Date().toISOString(),products:JSON.parse(localStorage.getItem(KEY)||"[]"),finances:finances};
+   const data={format:backupFormat,exportedAt:new Date().toISOString(),products:JSON.parse(JSON.stringify(products)),finances:finances};
    if(!Array.isArray(data.products)||!data.products.every(validProduct)||!validFinance(data.finances))throw Error("Los datos actuales no tienen un formato válido");
    const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
    const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="AZORES_copia_"+new Date().toISOString().slice(0,10)+".json";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
