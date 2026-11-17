@@ -1,0 +1,1 @@
+AZORES V9.26 PRUEBAS: fotos optimizadas a JPEG (900 px, calidad 68%), eliminación/sustitución y caché local tolerante a cuota llena. Datos sincronizados con Supabase. No publicar en repositorio definitivo sin probar. No borrar datos del navegador.

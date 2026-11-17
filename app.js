@@ -47,7 +47,7 @@ async function loadCloudState(){
   products=[];finances={opening:{Aurora:0,Pedro:0},contributions:[],withdrawals:[],capitalRepayments:[]};
  }
  finances.opening||={Aurora:0,Pedro:0};finances.contributions||=[];finances.withdrawals||=[];finances.capitalRepayments||=[];
- localStorage.setItem(KEY,JSON.stringify(products));localStorage.setItem(FIN_KEY,JSON.stringify(finances));
+ cacheLocalState();
  cloudReady=true;render();setCloudLock(false);setCloudStatus("✓ Conectado a Supabase");
 }
 async function startCloud(){
@@ -85,7 +85,7 @@ let products=JSON.parse(localStorage.getItem(KEY)||"[]");
 const FIN_KEY="azores-finances-v7";
 let finances=JSON.parse(localStorage.getItem(FIN_KEY)||'{"opening":{"Aurora":0,"Pedro":0},"contributions":[],"withdrawals":[]}');
 finances.opening ||= {Aurora:0,Pedro:0};finances.contributions ||= [];finances.withdrawals ||= [];finances.capitalRepayments ||= [];
-function saveFin(){localStorage.setItem(FIN_KEY,JSON.stringify(finances));render();queueCloudSave()}
+function saveFin(){cacheLocalState();render();queueCloudSave()}
 function normalizedAccount(v){return /aurora|auro/i.test(v||"")?"Aurora":/pedro/i.test(v||"")?"Pedro":null}
 function purchaseMethod(p){return p.purchaseMethod||"Vinted"}
 function receiver(p){return normalizedAccount(p.receivingAccount||p.account)}
@@ -117,7 +117,12 @@ const trackingPreview=new Map();
 let trackingRun=0;
 const $=s=>document.querySelector(s);
 const money=n=>(Number(n)||0).toLocaleString("es-ES",{style:"currency",currency:"EUR"});
-function save(){localStorage.setItem(KEY,JSON.stringify(products));render();queueCloudSave()}
+// La nube es el origen de verdad. Una caché local llena no debe impedir guardar.
+function cacheLocalState(){
+ try{localStorage.setItem(KEY,JSON.stringify(products));localStorage.setItem(FIN_KEY,JSON.stringify(finances));}
+ catch(err){console.warn("AZORES: caché local llena; se conservará la sincronización en la nube",err);}
+}
+function save(){cacheLocalState();render();queueCloudSave()}
 function stats(){
  const f=financesSummary();
  document.getElementById("homeCash").textContent=money(f.total);
@@ -278,7 +283,7 @@ const dialog=$("#productDialog");
 function openDialog(id=null){
  editingId=typeof id==="string"?id:null;
  const p=products.find(item=>item.id===editingId);
- const form=$("#productForm");form.reset();
+ const form=$("#productForm");form.reset();$("#saveProductButton").disabled=false;
  $("#productFormMessage").textContent="";
  photoData=p?.photo||"";
  form.elements.name.value=p?.name||"";
@@ -306,13 +311,32 @@ $("#removeProductPhoto").addEventListener("click",()=>{
  updateProductPhotoPreview();
  $("#productFormMessage").textContent="Fotografía eliminada. Pulsa Guardar cambios para confirmar.";
 });
+async function compressProductPhoto(file){
+ const url=URL.createObjectURL(file);
+ try{
+  const img=new Image();img.src=url;
+  await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error("Imagen no compatible"));});
+  const max=900,scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+  const canvas=document.createElement("canvas");
+  canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
+  canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  const ctx=canvas.getContext("2d");if(!ctx)throw Error("No se pudo procesar la imagen");
+  ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  return canvas.toDataURL("image/jpeg",0.68);
+ }finally{URL.revokeObjectURL(url);}
+}
 $("#productForm [name=photo]").addEventListener("change",e=>{
  const f=e.target.files[0];if(!f)return;
  if(!f.type.startsWith("image/")){$("#productFormMessage").textContent="Selecciona una imagen válida.";return;}
- const reader=new FileReader();
- reader.onload=()=>{photoData=String(reader.result);updateProductPhotoPreview();$("#productFormMessage").textContent="Fotografía preparada. Pulsa Guardar cambios.";};
- reader.onerror=()=>{$("#productFormMessage").textContent="No se pudo leer la fotografía.";};
- reader.readAsDataURL(f);
+ // Reducir fotos de cámara antes de almacenarlas o enviarlas a Supabase.
+ $("#saveProductButton").disabled=true;
+ $("#productFormMessage").textContent="Optimizando fotografía…";
+ compressProductPhoto(f).then(data=>{
+  photoData=data;updateProductPhotoPreview();
+  $("#saveProductButton").disabled=false;
+  $("#productFormMessage").textContent="Fotografía optimizada. Pulsa Guardar cambios.";
+ }).catch(err=>{$("#saveProductButton").disabled=false;$("#productFormMessage").textContent="No se pudo preparar la fotografía: "+err.message;});
 });
 $("#view").addEventListener("click",e=>{const b=e.target.closest("[data-edit]");if(b)openDialog(b.dataset.edit);const sell=e.target.closest("[data-sell]");if(sell)openSaleDialog(sell.dataset.sell);const editSale=e.target.closest("[data-sale-edit]");if(editSale)openSaleDialog(editSale.dataset.saleEdit,true);const cancel=e.target.closest("[data-sale-cancel]");if(cancel)cancelSale(cancel.dataset.saleCancel);const ship=e.target.closest("[data-ship-edit]");if(ship)openShippingDialog(ship.dataset.shipEdit);const del=e.target.closest("[data-delete]");if(del)deletePurchase(del.dataset.delete)});
 function deletePurchase(id){
