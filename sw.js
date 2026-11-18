@@ -1,5 +1,5 @@
 // AZORES - caché de aplicación prueba envíos limpios 2026-11-16-1
-const CACHE = "azores-shell-v936-notification-test-20261118-1";
+const CACHE = "azores-shell-v937-push-subscription-20261118-1";
 const FILES = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./logo-azores.jpg", "./cata-celebracion.gif"];
 const SCOPE = new URL(self.registration.scope);
 self.addEventListener("install", event => {
@@ -44,4 +44,17 @@ self.addEventListener("notificationclick", event => {
     if (existing) return existing.focus();
     return self.clients.openWindow(self.registration.scope);
   })());
+});
+
+// V9.37: mostrar push recibidos incluso con la app cerrada.
+self.addEventListener("push", event => {
+  let payload = {};
+  try { payload = event.data?.json() || {}; } catch { payload = {body: event.data?.text() || ""}; }
+  const title = typeof payload.title === "string" ? payload.title : "AZORES · Envíos";
+  const body = typeof payload.body === "string" ? payload.body : "Hay novedades en un envío.";
+  event.waitUntil(self.registration.showNotification(title, {
+    body, icon: "./icon-192.png", badge: "./icon-192.png",
+    tag: typeof payload.tag === "string" ? payload.tag : "azores-envios",
+    data: {url: self.registration.scope}
+  }));
 });

@@ -1,0 +1,5 @@
+AZORES V9.37 - PRUEBAS DE SUSCRIPCION PUSH
+
+Incluye boton de registro Web Push y manejador de push en sw.js.
+Requiere desplegar primero azores-push con el codigo seguro del archivo AZORES_PUSH_FUNCION_SEGURA.ts.
+NO desplegar en la version definitiva sin probar. No modifica logica financiera.

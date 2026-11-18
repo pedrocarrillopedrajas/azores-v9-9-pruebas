@@ -659,3 +659,32 @@ document.getElementById("testNotificationButton")?.addEventListener("click", asy
     say("Notificación de prueba enviada al sistema. Comprueba si aparece en el iPhone.");
   } catch (error) { say("No se pudo mostrar la notificación: " + (error?.message || String(error))); }
 });
+
+// V9.37: suscripción Web Push autenticada. No cambia ventas, cobros ni inventario.
+function azoresBase64UrlToBytes(value) {
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - value.length % 4) % 4);
+  return Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+}
+document.getElementById("registerPushButton")?.addEventListener("click", async () => {
+  const button = document.getElementById("registerPushButton");
+  const result = document.getElementById("testNotificationResult");
+  const say = message => { if (result) result.textContent = message; };
+  if (!cloudReady || !cloudSession?.access_token) { say("Primero debes iniciar sesión en AZORES."); return; }
+  if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+    say("Este dispositivo no admite notificaciones push. En iPhone, abre AZORES desde su icono en la pantalla de inicio."); return;
+  }
+  button.disabled = true;
+  try {
+    const permission = Notification.permission === "default" ? await Notification.requestPermission() : Notification.permission;
+    if (permission !== "granted") throw Error("Permiso de notificaciones no concedido.");
+    const registration = await navigator.serviceWorker.ready;
+    const response = await cloudFetch("/functions/v1/azores-push", {method:"GET"});
+    const config = await response.json();
+    if (!config.publicKey) throw Error("El servidor todavía no tiene habilitado el registro push.");
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) subscription = await registration.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:azoresBase64UrlToBytes(config.publicKey)});
+    await cloudFetch("/functions/v1/azores-push", {method:"POST", body:JSON.stringify({subscription:subscription.toJSON(), dispositivo: /iPad/i.test(navigator.userAgent) ? "iPad" : /iPhone/i.test(navigator.userAgent) ? "iPhone" : "Navegador"})});
+    say("✓ Dispositivo registrado para notificaciones push. Aún falta activar el envío automático desde el servidor.");
+  } catch(error) { say("No se pudo activar: " + (error?.message || String(error))); }
+  finally { button.disabled = false; }
+});
