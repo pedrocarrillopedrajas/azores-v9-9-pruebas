@@ -1,0 +1,1 @@
+AZORES V9.36 - Prueba de permiso y notificación local en iPhone. No incluye push remoto ni monitorización en segundo plano. Mantiene datos y lógica de negocio V9.35. Subir archivos al repositorio de PRUEBAS, nunca a definitiva.

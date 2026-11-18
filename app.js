@@ -640,3 +640,22 @@ document.getElementById("clearAllPhotos").addEventListener("click",async()=>{
  document.addEventListener("click",e=>{const photo=e.target.closest("img.zoomable-photo");if(!photo)return;viewer.querySelector("img").src=photo.src;viewer.querySelector("img").alt=photo.alt;viewer.showModal()});
  document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches("img.zoomable-photo")){e.preventDefault();e.target.click()}});
 })();
+
+// V9.36: prueba local de permiso y notificación. No implica suscripción push ni servidor.
+document.getElementById("testNotificationButton")?.addEventListener("click", async () => {
+  const result = document.getElementById("testNotificationResult");
+  const say = message => { result.textContent = message; };
+  if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+    say("Este navegador no admite esta prueba de notificaciones."); return;
+  }
+  try {
+    const permission = Notification.permission === "default" ? await Notification.requestPermission() : Notification.permission;
+    if (permission !== "granted") { say("Permiso no concedido. Revisa Ajustes > Notificaciones del iPhone."); return; }
+    const registration = await navigator.serviceWorker.ready;
+    await registration.showNotification("AZORES · Prueba correcta", {
+      body: "Las notificaciones están permitidas en este iPhone. Esta es una prueba, no un cambio real de envío.",
+      icon: "./icon-192.png", badge: "./icon-192.png", tag: "azores-prueba-local", data: {url: "./"}
+    });
+    say("Notificación de prueba enviada al sistema. Comprueba si aparece en el iPhone.");
+  } catch (error) { say("No se pudo mostrar la notificación: " + (error?.message || String(error))); }
+});

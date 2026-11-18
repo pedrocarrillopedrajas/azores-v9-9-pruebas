@@ -1,5 +1,5 @@
 // AZORES - caché de aplicación prueba envíos limpios 2026-11-16-1
-const CACHE = "azores-shell-v935-clear-photos-20261117-1";
+const CACHE = "azores-shell-v936-notification-test-20261118-1";
 const FILES = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./logo-azores.jpg", "./cata-celebracion.gif"];
 const SCOPE = new URL(self.registration.scope);
 self.addEventListener("install", event => {
@@ -33,5 +33,15 @@ self.addEventListener("fetch", event => {
       }
       throw error;
     }
+  })());
+});
+
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({type: "window", includeUncontrolled: true});
+    const existing = windows.find(client => client.url.startsWith(self.registration.scope));
+    if (existing) return existing.focus();
+    return self.clients.openWindow(self.registration.scope);
   })());
 });
