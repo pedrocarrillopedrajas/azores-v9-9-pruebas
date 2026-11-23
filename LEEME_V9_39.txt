@@ -1,0 +1,3 @@
+AZORES V9.39 - pruebas
+Recupera los colores originales verde oscuro y crema, mantiene el calendario lateral y oculta el panel antiguo de pruebas de notificaciones sin eliminar los identificadores usados por JS.
+No modifica lógica de negocio, cobros, datos ni funciones de notificaciones.

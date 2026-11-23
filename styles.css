@@ -68,7 +68,7 @@ dialog::backdrop{background:#102B2477}
 /* V9.17: protección de datos compacta; no afecta a Supabase ni a copias */
 .welcome-actions{display:flex;align-items:flex-start;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 .backup-dropdown{position:relative;z-index:5}
-.backup-dropdown>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:10px 14px;background:#fff;border:1px solid #cbdad7;border-radius:10px;color:#163f36;font-size:13px;font-weight:700;white-space:nowrap}
+.backup-dropdown>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:10px 14px;background:#fff;border:1px solid #cbdad7;border-radius:10px;color:var(--navy);font-size:13px;font-weight:700;white-space:nowrap}
 .backup-dropdown>summary::-webkit-details-marker{display:none}
 .backup-dropdown>summary:focus-visible{outline:3px solid #6aab9d;outline-offset:2px}
 .backup-dropdown[open]>summary{background:#f1f7f5}
@@ -91,7 +91,7 @@ dialog::backdrop{background:#102B2477}
 .header-actions .backup-dropdown{z-index:40}
 .header-actions .backup-dropdown>summary{min-height:30px;padding:5px 10px;background:transparent;color:#E2D4AD;border:1px solid #9D8759;border-radius:30px;font-size:10px;letter-spacing:1px}
 .header-actions .backup-dropdown[open]>summary{background:#23564b}
-.header-actions .backup-dropdown .backup-panel{color:#163f36;letter-spacing:normal;z-index:50}
+.header-actions .backup-dropdown .backup-panel{color:var(--navy);letter-spacing:normal;z-index:50}
 body:has(#appShell[hidden]) .header-actions .backup-dropdown{display:none}
 @media(max-width:650px){.header-actions{gap:6px}.header-actions .backup-dropdown>summary{font-size:9px;padding:5px 8px}.header-actions .backup-dropdown .backup-panel{right:0}}
 
@@ -114,15 +114,15 @@ body:has(#appShell[hidden]) .header-actions .backup-dropdown{display:none}
 .azores-photo-viewer img{display:block;margin:auto;max-width:100%;max-height:calc(94vh - 55px);width:auto;height:auto;object-fit:contain;border-radius:10px}
 .azores-photo-close{position:absolute;right:8px;top:0;border:0;border-radius:50%;background:#fff;color:#17242c;width:36px;height:36px;font-size:27px;line-height:30px;cursor:pointer}
 
-/* AZORES V9.38: fondo salvia + calendario lateral plegable */
-body{background:linear-gradient(145deg,#e9f1e9 0%,#f2f5ee 45%,#e6efe9 100%) fixed;color:#1c332c}
+/* AZORES V9.39: identidad verde original + calendario lateral plegable */
+body{background:var(--bg);color:var(--ink)}
 .shell{max-width:1440px}
 .az-dashboard-layout{display:grid;grid-template-columns:264px minmax(0,1fr);gap:20px;align-items:start}
 .az-dashboard-main{min-width:0}
 .az-dashboard-main .home-summary,.az-dashboard-main .content-card{max-width:none}
-.az-calendar{position:sticky;top:16px;background:#fffdfb;border:1px solid #d7e4d9;border-radius:18px;padding:16px;box-shadow:0 8px 28px #244b3510;min-width:0}
-.az-calendar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#163f36}
-.az-calendar-toggle,.az-month-nav button{border:1px solid #d4e3d7;background:#eef5ee;color:#214d3d;border-radius:9px;cursor:pointer;min-width:30px;height:30px;font:inherit;font-weight:700}
+.az-calendar{position:sticky;top:16px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 8px 28px #244b3510;min-width:0}
+.az-calendar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--navy)}
+.az-calendar-toggle,.az-month-nav button{border:1px solid var(--line);background:#F0F2EC;color:var(--navy);border-radius:9px;cursor:pointer;min-width:30px;height:30px;font:inherit;font-weight:700}
 .az-month-nav{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:18px 0 12px}
 .az-month-nav strong{text-align:center;text-transform:capitalize;font-size:13px}
 .az-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}

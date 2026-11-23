@@ -33,12 +33,11 @@
         <button class="primary" id="newProductTop">＋ Añadir producto</button>
       </div>
     </section>
-    <section class="content-card" aria-label="Prueba de notificaciones" style="margin-bottom:16px;padding:16px">
-      <div class="section-heading"><div><p class="eyebrow">PRUEBAS · IPHONE</p><h2>Notificaciones AZORES</h2></div></div>
-      <p class="muted">Primera prueba: solicita permiso y muestra un aviso de ejemplo. Todavía no detecta cambios de envíos con la aplicación cerrada.</p>
-      <button type="button" class="primary" id="testNotificationButton">Probar notificación local</button>
-      <button type="button" class="primary" id="registerPushButton">Activar avisos automáticos (pruebas)</button>
-      <p id="testNotificationResult" role="status" aria-live="polite" class="muted"></p>
+    <!-- Controles históricos conservados para compatibilidad con los manejadores JS; no se muestran. -->
+    <section hidden aria-hidden="true">
+      <button type="button" id="testNotificationButton">Probar notificación local</button>
+      <button type="button" id="registerPushButton">Activar avisos automáticos</button>
+      <p id="testNotificationResult" role="status"></p>
     </section>
     <div class="az-dashboard-layout" id="azDashboardLayout">
       <aside class="az-calendar" id="azCalendar" aria-label="Calendario de actividad">
