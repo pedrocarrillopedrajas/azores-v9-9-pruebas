@@ -197,9 +197,71 @@ function stats(){
 }
 function isSold(p){return p.salePrice!==""&&p.salePrice!=null}
 function productStatus(p){return isSold(p)?"Vendido":(p.status||"Sin vender")}
+// AZORES V9.38: calendario visual de solo lectura. No altera datos ni sincronización.
+const azCalendarState={month:new Date().getMonth(),year:new Date().getFullYear(),selected:new Date().getDate(),collapsed:window.matchMedia('(max-width:760px)').matches};
+function azCalendarDate(value){
+ if(!value)return null;
+ const s=String(value);
+ const m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+ if(m){const y=+m[1],mo=+m[2],day=+m[3];const d=new Date(y,mo-1,day);return d.getFullYear()===y&&d.getMonth()===mo-1&&d.getDate()===day?`${m[1]}-${m[2]}-${m[3]}`:null;}
+ const d=new Date(s);if(!Number.isFinite(d.getTime()))return null;
+ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function azCalendarEvents(){
+ const events=[];
+ const add=(date,type,title,amount)=>{const day=azCalendarDate(date);if(day)events.push({day,type,title,amount});};
+ products.forEach(p=>{
+  const name=String(p.name||'Producto');
+  add(p.purchaseDate,'buy',name,p.purchasePrice);
+  if(isSold(p))add(p.saleDate,'sale',name,p.salePrice);
+  const shipping=p.shipping||{};
+  // La última actualización del transportista es un movimiento de seguimiento, no la fecha de envío.
+  const tracking=trackingPreview.get(p.id);
+  const eventDate=tracking?.lastUpdated||shipping.lastUpdated;
+  if(shipping.carrier&&eventDate)add(eventDate,'ship',name+' · '+String(shipping.status||'Seguimiento'),null);
+  if(Array.isArray(shipping.events))shipping.events.forEach(e=>{
+   if(e&&typeof e==='object')add(e.date||e.timestamp||e.at,'ship',name+' · '+String(e.status||e.description||'Movimiento'),null);
+  });
+  // No atribuir una fecha al cobro si el registro no la contiene.
+  if(p.paymentStatus==='Cobrado')add(p.paidAt||p.paymentDate||p.collectedAt,'paid',name,p.salePrice);
+ });
+ return events;
+}
+function azRenderCalendar(){
+ const grid=document.getElementById('azCalendarGrid');if(!grid)return;
+ const s=azCalendarState,first=new Date(s.year,s.month,1),count=new Date(s.year,s.month+1,0).getDate();
+ document.getElementById('azMonthTitle').textContent=first.toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+ const events=azCalendarEvents();const grouped=new Map();events.forEach(e=>{if(!grouped.has(e.day))grouped.set(e.day,[]);grouped.get(e.day).push(e)});
+ const labels=['L','M','X','J','V','S','D'];let html=labels.map(x=>`<span class="az-weekday">${x}</span>`).join('');
+ const blanks=(first.getDay()+6)%7;for(let i=0;i<blanks;i++)html+='<span></span>';
+ for(let day=1;day<=count;day++){
+  const key=`${s.year}-${String(s.month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  const list=grouped.get(key)||[];const types=[...new Set(list.map(e=>e.type))];
+  html+=`<button type="button" class="az-day${s.selected===day?' selected':''}" data-az-day="${day}" aria-label="${day}: ${list.length} movimientos" aria-pressed="${s.selected===day}"><span>${day}</span><span class="az-day-dots">${types.map(t=>`<i class="az-dot az-${t}"></i>`).join('')}</span></button>`;
+ }
+ grid.innerHTML=html;
+ grid.querySelectorAll('[data-az-day]').forEach(b=>b.addEventListener('click',()=>{s.selected=+b.dataset.azDay;azRenderCalendar()}));
+ const key=`${s.year}-${String(s.month+1).padStart(2,'0')}-${String(s.selected).padStart(2,'0')}`;
+ const selected=grouped.get(key)||[];
+ const typeName={buy:'Compra',sale:'Venta',ship:'Envío',paid:'Cobro'};
+ const activity=document.getElementById('azDayActivity');
+ activity.innerHTML=`<strong>${s.selected} de ${first.toLocaleDateString('es-ES',{month:'long'})}</strong>`+(selected.length?selected.map(e=>`<div class="az-activity-row"><i class="az-dot az-${e.type}"></i><div><b>${typeName[e.type]}</b><span>${esc(e.title)}</span>${e.amount!==null&&e.amount!==undefined&&e.amount!==''?`<small>${money(e.amount)}</small>`:''}</div></div>`).join(''):'<p>Sin movimientos registrados.</p>');
+}
+function azSetCalendarCollapsed(collapsed){
+ azCalendarState.collapsed=collapsed;
+ const aside=document.getElementById('azCalendar');if(!aside)return;
+ aside.classList.toggle('is-collapsed',collapsed);
+ document.getElementById('azCalendarBody').hidden=collapsed;
+ const toggle=document.getElementById('azCalendarToggle');toggle.setAttribute('aria-expanded',String(!collapsed));toggle.textContent=collapsed?'▶':'◀';
+}
+function azCalendarShift(delta){const s=azCalendarState,d=new Date(s.year,s.month+delta,1);s.year=d.getFullYear();s.month=d.getMonth();s.selected=1;azRenderCalendar();}
+document.getElementById('azCalendarToggle').addEventListener('click',()=>azSetCalendarCollapsed(!azCalendarState.collapsed));
+document.getElementById('azPrevMonth').addEventListener('click',()=>azCalendarShift(-1));
+document.getElementById('azNextMonth').addEventListener('click',()=>azCalendarShift(1));
+azSetCalendarCollapsed(azCalendarState.collapsed);
 function render(){
  queueMicrotask(()=>hydrateStoredPhotos(document));
- stats();$("#sectionTitle").textContent=activeTab;
+ stats();azRenderCalendar();$("#sectionTitle").textContent=activeTab;
  const home=activeTab==="Inicio";
  if(home && cataLastTab!=="Inicio") {
    const cata=document.getElementById("cataCelebration");

@@ -1,0 +1,4 @@
+AZORES V9.38 PRUEBAS: Fondo salvia y calendario lateral plegable.
+Solo lectura: compras, ventas, eventos de seguimiento y cobros con fecha explícita.
+No modifica operaciones, finanzas, Supabase, push ni automatizaciones.
+Subir los archivos del ZIP a la RAÍZ del repositorio de pruebas.

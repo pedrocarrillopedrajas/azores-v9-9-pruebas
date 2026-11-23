@@ -40,6 +40,16 @@
       <button type="button" class="primary" id="registerPushButton">Activar avisos automáticos (pruebas)</button>
       <p id="testNotificationResult" role="status" aria-live="polite" class="muted"></p>
     </section>
+    <div class="az-dashboard-layout" id="azDashboardLayout">
+      <aside class="az-calendar" id="azCalendar" aria-label="Calendario de actividad">
+        <div class="az-calendar-head"><strong>📅 Actividad</strong><button type="button" id="azCalendarToggle" class="az-calendar-toggle" aria-expanded="true" aria-controls="azCalendarBody" title="Abrir o cerrar calendario">◀</button></div>
+        <div id="azCalendarBody"><div class="az-month-nav"><button type="button" id="azPrevMonth" aria-label="Mes anterior">‹</button><strong id="azMonthTitle"></strong><button type="button" id="azNextMonth" aria-label="Mes siguiente">›</button></div>
+          <div class="az-calendar-grid" id="azCalendarGrid"></div>
+          <div class="az-calendar-legend"><span><i class="az-dot az-buy"></i> Compras</span><span><i class="az-dot az-sale"></i> Ventas</span><span><i class="az-dot az-ship"></i> Envíos</span><span><i class="az-dot az-paid"></i> Cobros*</span></div>
+          <div class="az-day-activity" id="azDayActivity" aria-live="polite"></div><small class="az-calendar-note">* Los cobros solo aparecen si tienen fecha registrada.</small>
+        </div>
+      </aside>
+      <div class="az-dashboard-main">
     <section class="home-summary" id="homeSummary" aria-label="Resumen de AZORES">
       <div class="home-summary-head"><span class="eyebrow">E S T O　 E S　 A Z O R E S</span><h2>El futuro lo construimos nosotros.</h2></div>
       <article class="home-main-card"><span>Dinero disponible</span><strong id="homeCash">0,00 €</strong><small>Saldo conjunto de las cuentas Vinted</small><div id="cataCelebration" class="cata-celebration" hidden aria-label="CATA celebra que hay dinero disponible"><img src="cata-celebracion.gif" alt="CATA, la mascota pinscher de AZORES, celebra el dinero disponible" width="190" height="193"></div></article>
@@ -55,6 +65,8 @@
       </nav>
       <div id="view"></div>
     </section>
+      </div>
+    </div>
     <footer>AZORES · Versión 9.0 · Diseñado para ordenador y móvil</footer>
   </main>
   <dialog id="productDialog">

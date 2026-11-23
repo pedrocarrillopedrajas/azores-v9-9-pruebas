@@ -113,3 +113,34 @@ body:has(#appShell[hidden]) .header-actions .backup-dropdown{display:none}
 .azores-photo-viewer::backdrop{background:rgba(8,18,23,.9)}
 .azores-photo-viewer img{display:block;margin:auto;max-width:100%;max-height:calc(94vh - 55px);width:auto;height:auto;object-fit:contain;border-radius:10px}
 .azores-photo-close{position:absolute;right:8px;top:0;border:0;border-radius:50%;background:#fff;color:#17242c;width:36px;height:36px;font-size:27px;line-height:30px;cursor:pointer}
+
+/* AZORES V9.38: fondo salvia + calendario lateral plegable */
+body{background:linear-gradient(145deg,#e9f1e9 0%,#f2f5ee 45%,#e6efe9 100%) fixed;color:#1c332c}
+.shell{max-width:1440px}
+.az-dashboard-layout{display:grid;grid-template-columns:264px minmax(0,1fr);gap:20px;align-items:start}
+.az-dashboard-main{min-width:0}
+.az-dashboard-main .home-summary,.az-dashboard-main .content-card{max-width:none}
+.az-calendar{position:sticky;top:16px;background:#fffdfb;border:1px solid #d7e4d9;border-radius:18px;padding:16px;box-shadow:0 8px 28px #244b3510;min-width:0}
+.az-calendar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#163f36}
+.az-calendar-toggle,.az-month-nav button{border:1px solid #d4e3d7;background:#eef5ee;color:#214d3d;border-radius:9px;cursor:pointer;min-width:30px;height:30px;font:inherit;font-weight:700}
+.az-month-nav{display:flex;align-items:center;justify-content:space-between;gap:6px;margin:18px 0 12px}
+.az-month-nav strong{text-align:center;text-transform:capitalize;font-size:13px}
+.az-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.az-weekday{text-align:center;color:#718477;font-size:11px;font-weight:700;padding:7px 0}
+.az-day{border:1px solid transparent;border-radius:9px;background:transparent;min-height:38px;padding:4px 1px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;cursor:pointer;color:#234337;font-size:12px}
+.az-day:hover{background:#edf5ee}.az-day.selected{background:#d9e9dc;border-color:#8eb79b;font-weight:700}
+.az-day-dots{display:flex;justify-content:center;gap:2px;min-height:5px}
+.az-dot{display:inline-block;width:6px;height:6px;border-radius:50%;flex-shrink:0;background:#8c9a90}
+.az-buy{background:#d79a38}.az-sale{background:#2e9b6b}.az-ship{background:#4a89c9}.az-paid{background:#9973c7}
+.az-calendar-legend{display:flex;flex-wrap:wrap;gap:8px 10px;margin:15px 0;padding-bottom:12px;border-bottom:1px solid #e2eae2}
+.az-calendar-legend span{font-size:10px;color:#65776c;display:flex;align-items:center;gap:4px}
+.az-day-activity>strong{display:block;font-size:13px;color:#1e4634;text-transform:capitalize}
+.az-day-activity>p{font-size:12px;color:#748478}
+.az-activity-row{display:flex;gap:8px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #edf1ec}
+.az-activity-row .az-dot{margin-top:5px;width:8px;height:8px}
+.az-activity-row div{min-width:0;display:flex;flex-direction:column;gap:2px;font-size:12px;overflow-wrap:anywhere}
+.az-activity-row b{color:#204d38}.az-activity-row span{color:#52675a}.az-activity-row small{color:#667b6c}
+.az-calendar-note{display:block;color:#7b8d7f;font-size:10px;margin-top:12px}
+.az-calendar.is-collapsed{padding:12px}.az-calendar.is-collapsed .az-calendar-head strong{font-size:12px}
+.az-dashboard-layout:has(.az-calendar.is-collapsed){grid-template-columns:120px minmax(0,1fr)}
+@media(max-width:760px){.az-dashboard-layout,.az-dashboard-layout:has(.az-calendar.is-collapsed){display:block}.az-calendar{position:static;margin-bottom:14px}.az-calendar.is-collapsed{padding:12px 16px}.az-calendar.is-collapsed .az-calendar-head strong{font-size:14px}.az-calendar-grid{max-width:400px}.az-day{min-height:43px}}
