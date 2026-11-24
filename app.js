@@ -221,6 +221,12 @@ function azCalendarEvents(){
  });
  return events;
 }
+function azRenderRecent(home){
+ const el=document.getElementById('azRecent');if(!el)return;el.hidden=!home;if(!home)return;
+ const labels={buy:'Compra',sale:'Venta',ship:'Envío',paid:'Cobro'},icons={buy:'↓',sale:'↑',ship:'→',paid:'€'};
+ const events=azCalendarEvents().filter(e=>e.day<=azToday()).sort((a,b)=>b.day.localeCompare(a.day)).slice(0,6);
+ el.innerHTML=`<header><h2>Actividad reciente</h2><small>Últimos movimientos registrados</small></header>${events.length?events.map(e=>`<div class="az-recent-row"><span class="az-recent-icon az-${e.type}" aria-hidden="true">${icons[e.type]}</span><div class="az-recent-detail"><strong>${labels[e.type]} · ${esc(e.title)}</strong><small>${esc(new Date(e.day+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'}))}</small></div>${e.amount!==null&&e.amount!==undefined&&e.amount!==''?`<strong class="az-recent-amount">${money(e.amount)}</strong>`:''}</div>`).join(''):'<p>Sin movimientos registrados.</p>'}<small class="az-recent-note">Solo operaciones con fecha registrada.</small>`;
+}
 function azRenderCalendar(){
  const grid=document.getElementById('azCalendarGrid');if(!grid)return;
  const s=azCalendarState,first=new Date(s.year,s.month,1),count=new Date(s.year,s.month+1,0).getDate();
@@ -259,7 +265,7 @@ $("#view").addEventListener("click",e=>{const b=e.target.closest("[data-inventor
 function render(){
  queueMicrotask(()=>hydrateStoredPhotos(document));
  stats();azRenderCalendar();$("#sectionTitle").textContent=activeTab;
- const home=activeTab==="Inicio";
+ const home=activeTab==="Inicio";azRenderRecent(home);
  if(home && cataLastTab!=="Inicio") {
    const cata=document.getElementById("cataCelebration");
    if(cata){
