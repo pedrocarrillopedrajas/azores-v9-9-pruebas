@@ -1,0 +1,1 @@
+V9.40: fechas reales de envío y cobro. No inventa fechas históricas. Cobros manuales guardan paidAt; envíos guardan shipping.sentAt. La automatización de servidor requiere revisar su código por separado.

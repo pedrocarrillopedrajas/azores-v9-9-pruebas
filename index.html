@@ -15,7 +15,16 @@
     <div class="brand"><img class="brand-logo" src="logo-azores.jpg" alt="Logo AZORES"><div class="brand-text"><div class="brand-title"><strong>AZORES</strong><svg class="spain-flag" viewBox="0 0 30 20" role="img" aria-label="Bandera de España" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" rx="1" fill="#AA151B"/><path d="M0 5h30v10H0z" fill="#F1BF00"/></svg></div><span class="spain-stripe" aria-hidden="true"></span><small>GESTIÓN DE COMPRAVENTA</small></div></div>
     <div class="header-actions"><span class="prototype-tag">GESTIÓN PRIVADA</span><details class="backup-dropdown">
           <summary aria-label="Abrir copias de seguridad">▣ Copias <span aria-hidden="true" class="backup-chevron">⌄</span></summary>
-          <section class="backup-panel" aria-label="Protección de datos"><div><strong>Protección de datos</strong><p>Guarda una copia de todas las operaciones y cuentas, incluidas las fotos. Puedes restaurarla más adelante.</p></div><div class="action-group"><button type="button" class="primary" id="exportBackup">Descargar copia</button><button type="button" class="secondary" id="importBackup">Restaurar copia</button><button type="button" class="secondary" id="clearAllPhotos" title="Requiere descargar una copia antes">Eliminar todas las fotos</button><input type="file" id="backupFile" accept=".json,application/json" hidden><button type="button" class="secondary" id="logoutButton">Cerrar sesión</button></div></section>
+          <section class="backup-panel" aria-label="Protección de datos"><div><strong>Protección de datos</strong><p>Guarda una copia de todas las operaciones y cuentas, incluidas las fotos. Puedes restaurarla más adelante.</p></div><div class="action-group"><button type="button" class="primary" id="exportBackup">Descargar copia</button><button type="button" class="secondary" id="importBackup">Restaurar copia</button><button type="button" class="secondary" id="clearAllPhotos" title="Requiere descargar una copia antes">Eliminar todas las fotos</button><input type="file" id="backupFile" accept=".json,application/json" hidden><button type="button" class="secondary" id="logoutButton">Cerrar sesión</button></div>
+            <div role="group" aria-label="Notificaciones">
+              <strong>Notificaciones</strong>
+              <div class="action-group">
+                <button class="secondary" type="button" id="registerPushButton">Activar avisos automáticos</button>
+                <button class="secondary" type="button" id="testNotificationButton">Probar en este dispositivo</button>
+              </div>
+              <p id="testNotificationResult" role="status"></p>
+            </div>
+          </section>
         </details></div>
   </header>
   <section id="loginPanel" class="login-panel">
@@ -33,19 +42,13 @@
         <button class="primary" id="newProductTop">＋ Añadir producto</button>
       </div>
     </section>
-    <!-- Controles históricos conservados para compatibilidad con los manejadores JS; no se muestran. -->
-    <section hidden aria-hidden="true">
-      <button type="button" id="testNotificationButton">Probar notificación local</button>
-      <button type="button" id="registerPushButton">Activar avisos automáticos</button>
-      <p id="testNotificationResult" role="status"></p>
-    </section>
     <div class="az-dashboard-layout" id="azDashboardLayout">
       <aside class="az-calendar" id="azCalendar" aria-label="Calendario de actividad">
         <div class="az-calendar-head"><strong>📅 Actividad</strong><button type="button" id="azCalendarToggle" class="az-calendar-toggle" aria-expanded="true" aria-controls="azCalendarBody" title="Abrir o cerrar calendario">◀</button></div>
         <div id="azCalendarBody"><div class="az-month-nav"><button type="button" id="azPrevMonth" aria-label="Mes anterior">‹</button><strong id="azMonthTitle"></strong><button type="button" id="azNextMonth" aria-label="Mes siguiente">›</button></div>
           <div class="az-calendar-grid" id="azCalendarGrid"></div>
           <div class="az-calendar-legend"><span><i class="az-dot az-buy"></i> Compras</span><span><i class="az-dot az-sale"></i> Ventas</span><span><i class="az-dot az-ship"></i> Envíos</span><span><i class="az-dot az-paid"></i> Cobros*</span></div>
-          <div class="az-day-activity" id="azDayActivity" aria-live="polite"></div><small class="az-calendar-note">* Los cobros solo aparecen si tienen fecha registrada.</small>
+          <div class="az-day-activity" id="azDayActivity" aria-live="polite"></div><small class="az-calendar-note">* Envíos y cobros aparecen cuando tienen fecha real registrada.</small>
         </div>
       </aside>
       <div class="az-dashboard-main">
@@ -94,6 +97,7 @@
       <div class="form-grid"><label>Fecha de venta<input type="date" name="saleDate" required></label><label>Precio de venta (€)<input type="number" name="salePrice" min="0" step="0.01" required></label></div>
       <div class="form-grid"><label>Comprador / cuenta<input name="buyer" placeholder="Ej. Usuario Vinted"></label><label>Estado del cobro<select name="paymentStatus"><option>Pendiente de cobro</option><option>Cobrado</option></select></label></div>
       <label>Cuenta Vinted que recibe el cobro<select name="receivingAccount" required><option value="">Seleccionar cuenta</option><option>Aurora</option><option>Pedro</option></select></label>
+      <div class="form-grid"><label>Fecha de envío<input type="date" name="sentAt"></label><label id="paidDateLabel" hidden>Fecha de cobro<input type="date" name="paidAt"></label></div>
       <div class="sale-summary" id="saleSummary">Selecciona un producto e indica el precio de venta.</div>
       <p class="sale-help">El producto dejará de aparecer en el inventario disponible. Podrás editar la venta después.</p>
       <div class="dialog-actions"><button type="button" class="secondary" id="cancelSaleDialog">Cancelar</button><button type="submit" class="primary">Guardar venta</button></div>
@@ -105,6 +109,7 @@
       <p id="shippingProductName" class="muted"></p>
       <label>Transportista<input name="carrier" maxlength="80" placeholder="Ej. InPost, Correos, SEUR"></label>
       <label>Enlace de seguimiento<input name="trackingUrl" type="url" placeholder="https://..."></label>
+      <label>Fecha real de envío<input type="date" name="sentAt"></label><button type="button" class="secondary" id="markSentToday">Marcar enviado hoy</button>
       <div class="dialog-actions"><button type="button" class="secondary" id="cancelShippingDialog">Cancelar</button><button type="submit" class="primary">Guardar envío</button></div>
     </form>
   </dialog>

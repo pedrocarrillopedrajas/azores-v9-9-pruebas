@@ -207,6 +207,7 @@ function azCalendarDate(value){
  const d=new Date(s);if(!Number.isFinite(d.getTime()))return null;
  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+function azToday(){return azCalendarDate(new Date());}
 function azCalendarEvents(){
  const events=[];
  const add=(date,type,title,amount)=>{const day=azCalendarDate(date);if(day)events.push({day,type,title,amount});};
@@ -215,15 +216,8 @@ function azCalendarEvents(){
   add(p.purchaseDate,'buy',name,p.purchasePrice);
   if(isSold(p))add(p.saleDate,'sale',name,p.salePrice);
   const shipping=p.shipping||{};
-  // La última actualización del transportista es un movimiento de seguimiento, no la fecha de envío.
-  const tracking=trackingPreview.get(p.id);
-  const eventDate=tracking?.lastUpdated||shipping.lastUpdated;
-  if(shipping.carrier&&eventDate)add(eventDate,'ship',name+' · '+String(shipping.status||'Seguimiento'),null);
-  if(Array.isArray(shipping.events))shipping.events.forEach(e=>{
-   if(e&&typeof e==='object')add(e.date||e.timestamp||e.at,'ship',name+' · '+String(e.status||e.description||'Movimiento'),null);
-  });
-  // No atribuir una fecha al cobro si el registro no la contiene.
-  if(p.paymentStatus==='Cobrado')add(p.paidAt||p.paymentDate||p.collectedAt,'paid',name,p.salePrice);
+  if(isSold(p))add(shipping.sentAt||shipping.shippedAt||shipping.shippingDate,'ship',name,null);
+  if(isSold(p)&&p.paymentStatus==='Cobrado')add(p.paidAt||p.paymentDate||p.collectedAt,'paid',name,p.salePrice);
  });
  return events;
 }
@@ -522,10 +516,20 @@ function openSaleDialog(id=null,edit=false){
  saleForm.elements.salePrice.value=edit?p.salePrice:"";
  saleForm.elements.buyer.value=edit?p.buyer||"":"";
  saleForm.elements.paymentStatus.value=edit?p.paymentStatus||"Pendiente de cobro":"Pendiente de cobro";
+ saleForm.elements.paidAt.value=edit?azCalendarDate(p.paidAt||p.paymentDate||p.collectedAt)||"":"";
+ saleForm.elements.sentAt.value=edit?azCalendarDate(p.shipping?.sentAt||p.shipping?.shippedAt||p.shipping?.shippingDate)||"":"";
+ updatePaidDateVisibility(false);
  saleForm.elements.receivingAccount.value=edit?receiver(p)||"":normalizedAccount(p?.account)||"";
  $("#saleDialogTitle").textContent=edit?"Editar venta":"Registrar venta";
  updateSaleSummary();saleDialog.showModal();
 }
+function updatePaidDateVisibility(fill){
+ const paid=saleForm.elements.paymentStatus.value==="Cobrado";
+ document.getElementById("paidDateLabel").hidden=!paid;
+ saleForm.elements.paidAt.disabled=!paid;
+ if(paid&&fill&&!saleForm.elements.paidAt.value)saleForm.elements.paidAt.value=azToday();
+}
+saleForm.elements.paymentStatus.addEventListener("change",()=>updatePaidDateVisibility(true));
 function updateSaleSummary(){
  const p=products.find(x=>x.id===$("#saleProduct").value);
  const value=saleForm.elements.salePrice.value;
@@ -544,7 +548,15 @@ saleForm.addEventListener("submit",e=>{
  p.saleDate=saleForm.elements.saleDate.value;
  p.salePrice=saleForm.elements.salePrice.value;
  p.buyer=saleForm.elements.buyer.value.trim();
+ const wasPaid=p.paymentStatus==="Cobrado";
  p.paymentStatus=saleForm.elements.paymentStatus.value;
+ if(p.paymentStatus==="Cobrado"){
+  const date=saleForm.elements.paidAt.value||(!wasPaid?azToday():"");
+  if(date)p.paidAt=date;
+ }else{delete p.paidAt;delete p.paymentDate;delete p.collectedAt;}
+ p.shipping||={};
+ p.shipping.sentAt=saleForm.elements.sentAt.value||null;
+ if(!p.shipping.sentAt){delete p.shipping.shippedAt;delete p.shipping.shippingDate;}
  p.receivingAccount=saleForm.elements.receivingAccount.value;
  p.status="Vendido";
  save();saleDialog.close();activeTab="Ventas";render();
@@ -559,6 +571,7 @@ function cancelSale(id){
  delete p.saleDate;
  delete p.buyer;
  delete p.paymentStatus;
+ delete p.paidAt;delete p.paymentDate;delete p.collectedAt;
  delete p.receivingAccount;
  delete p.shipping;
  activeTab="Inventario";
@@ -571,14 +584,18 @@ function openShippingDialog(id){
  $("#shippingProductName").textContent=p.name;
  shippingForm.elements.carrier.value=p.shipping?.carrier||"";
  shippingForm.elements.trackingUrl.value=p.shipping?.trackingUrl||"";
+ shippingForm.elements.sentAt.value=azCalendarDate(p.shipping?.sentAt||p.shipping?.shippedAt||p.shipping?.shippingDate)||"";
  shippingDialog.showModal();
 }
+$("#markSentToday").onclick=()=>{shippingForm.elements.sentAt.value=azToday();};
 $("#closeShippingDialog").onclick=()=>shippingDialog.close();
 $("#cancelShippingDialog").onclick=()=>shippingDialog.close();
 shippingForm.addEventListener("submit",e=>{
  e.preventDefault();const p=products.find(x=>x.id===editingShipmentId);if(!p||!isSold(p))return;
  const f=new FormData(shippingForm);
  p.shipping={...(p.shipping||{}),carrier:String(f.get("carrier")||"").trim(),trackingNumber:p.shipping?.trackingNumber||"",trackingUrl:String(f.get("trackingUrl")||"").trim(),status:p.shipping?.status||"Pendiente de seguimiento",lastUpdated:p.shipping?.lastUpdated||null,events:Array.isArray(p.shipping?.events)?p.shipping.events:[]};
+ p.shipping.sentAt=String(f.get("sentAt")||"")||null;
+ if(!p.shipping.sentAt){delete p.shipping.shippedAt;delete p.shipping.shippingDate;}
  save();shippingDialog.close();
 });
 render();
@@ -746,7 +763,7 @@ document.getElementById("registerPushButton")?.addEventListener("click", async (
     let subscription = await registration.pushManager.getSubscription();
     if (!subscription) subscription = await registration.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:azoresBase64UrlToBytes(config.publicKey)});
     await cloudFetch("/functions/v1/azores-push", {method:"POST", body:JSON.stringify({subscription:subscription.toJSON(), dispositivo: /iPad/i.test(navigator.userAgent) ? "iPad" : /iPhone/i.test(navigator.userAgent) ? "iPhone" : "Navegador"})});
-    say("✓ Dispositivo registrado para notificaciones push. Aún falta activar el envío automático desde el servidor.");
+    say("Este dispositivo se ha registrado para recibir avisos automáticos.");
   } catch(error) { say("No se pudo activar: " + (error?.message || String(error))); }
   finally { button.disabled = false; }
 });
