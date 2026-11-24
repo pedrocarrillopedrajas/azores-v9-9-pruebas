@@ -297,7 +297,7 @@ function render(){
    view.querySelectorAll("[data-sales-group]").forEach(btn=>btn.onclick=()=>{salesGroupOpen=salesGroupOpen===btn.dataset.salesGroup?null:btn.dataset.salesGroup;render()});
  }else if(activeTab==="Envíos"){
    const sold=products.filter(p=>isSold(p)&&p.paymentStatus!=="Cobrado");
-   view.innerHTML=`<span id="testVintedGoResult" role="status" hidden></span>`+(sold.length?`<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Comprador</th><th>Transportista</th><th>Seguimiento</th><th>Estado del paquete</th><th>Última actualización</th><th>Acciones</th></tr></thead><tbody>${sold.map(p=>{const sh=p.shipping||{};const preview=trackingPreview.get(p.id);const effective=preview||sh;const updated=effective.lastUpdated?new Date(effective.lastUpdated).toLocaleString("es-ES",{dateStyle:"short",timeStyle:"short"}):"Pendiente de consulta automática";return `<tr><td><strong>${esc(p.name)}</strong></td><td>${esc(p.buyer||"—")}</td><td>${esc(sh.carrier||"—")}</td><td>${safeTrackingLink(sh.trackingUrl)}</td><td><span class="pill">${esc(effective.status||"Pendiente de seguimiento")}</span></td><td>${esc(updated)}</td><td><button type="button" class="edit-product" data-ship-edit="${esc(p.id)}">Editar envío</button></td></tr>`}).join("")}</tbody></table></div><p class="muted">El estado del paquete es independiente del cobro. Los envíos permanecen aquí hasta que marques la venta como «Cobrado».</p>`:`<div class="simple-panel"><strong>No hay envíos pendientes de cobro</strong><p>Los pedidos pendientes de cobro aparecerán aquí automáticamente.</p></div>`);
+   view.innerHTML=`<span id="testVintedGoResult" role="status" hidden></span>`+(sold.length?`<div class="az-ship-grid">${sold.map(azShipCard).join("")}</div><p class="muted">Los envíos permanecen aquí hasta que la venta esté cobrada.</p>`:`<div class="simple-panel"><strong>No hay envíos pendientes de cobro</strong></div>`);
    const testButton=document.getElementById("testVintedGo");if(testButton)testButton.onclick=refreshVintedGoPreviews;
  }else if(activeTab==="Cuentas"){
    const f=financesSummary();
@@ -325,6 +325,20 @@ function render(){
  }
 }
 
+function azShipStage(status,sent){
+ const t=String(status||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+ if(/^(entregado|paquete entregado|entregado al destinatario|paquete entregado al destinatario|recogido por (el )?destinatario)$/.test(t))return 3;
+ if(/disponible para (la )?recogida|listo para recoger|a la espera de recogida por el destinatario/.test(t))return 2;
+ if(/de camino|en camino|en transito|clasific|admitido|paquete dejado|en transporte/.test(t)||sent)return 1;
+ if(/pendiente de envio|envio creado/.test(t))return 0;
+ return -1;
+}
+function azShipCard(p){
+ const sh=p.shipping||{}, e=trackingPreview.get(p.id)||sh, status=e.status||"Pendiente de seguimiento", stage=azShipStage(status,sh.sentAt);
+ const date=v=>v&&Number.isFinite(Date.parse(v))?new Date(v).toLocaleString("es-ES",{dateStyle:"short",timeStyle:"short"}):"";
+ const events=Array.isArray(e.events)?e.events:[];
+ return `<article class="az-ship-card"><header><div><small>${esc(sh.carrier||"Transportista sin indicar")}</small><h3>${esc(p.name)}</h3><small>${esc(p.buyer||"Comprador sin indicar")}</small></div><span class="pill">${esc(status)}</span></header><div class="az-ship-progress" aria-label="Fase orientativa del envío">${["Preparación","En camino","Recogida","Entregado"].map((label,i)=>`<div class="${stage>=i?"done":""}"><span>${stage>i?"✓":i+1}</span><small>${label}</small></div>`).join("")}</div><div class="az-ship-history"><strong>Movimientos disponibles</strong>${events.length?events.map(x=>`<div class="az-ship-event">${esc(x.mensaje||x.status||x.description||"Movimiento")}<small>${esc(date(x.fecha||x.date||x.datetime))}</small></div>`).join(""):`<div class="az-ship-event">${esc(status)}<small>${esc(date(e.lastUpdated)||"Sin fecha de actualización")}</small></div>`}${sh.sentAt?`<div class="az-ship-event">Fecha de envío <small>${esc(sh.sentAt)}</small></div>`:""}</div><footer>${safeTrackingLink(sh.trackingUrl)}<button class="edit-product" data-ship-edit="${esc(p.id)}">Editar envío</button></footer></article>`;
+}
 function vintedGoNumber(p){
  if(!isSold(p)||p.paymentStatus==="Cobrado"||!/vinted\s*go/i.test(p.shipping?.carrier||""))return null;
  try{
@@ -364,7 +378,7 @@ async function refreshVintedGoPreviews(){
   if(entry&&Number.isFinite(entry.checkedAt)&&now-entry.checkedAt>=0&&now-entry.checkedAt<TRACKING_INTERVAL_MS&&typeof entry.status==="string"&&Number.isFinite(Date.parse(entry.lastUpdated))){
    const previous=trackingPreview.get(p.id);
    if(!previous||previous.status!==entry.status||previous.lastUpdated!==entry.lastUpdated){
-    trackingPreview.set(p.id,{status:entry.status,lastUpdated:entry.lastUpdated});changed++;
+    trackingPreview.set(p.id,{status:entry.status,lastUpdated:entry.lastUpdated,events:entry.events||[]});changed++;
    }
    cached++;
   }else pending.push({p,number,key});
@@ -377,9 +391,9 @@ async function refreshVintedGoPreviews(){
    const response=await cloudFetch("/functions/v1/azores-prueba-vintedgo?seguimiento="+encodeURIComponent(number),{method:"POST",body:"{}"});
    const result=await response.json();
    if(result.resultado!=="Seguimiento leído"||typeof result.estadoPaquete!=="string"||!Number.isFinite(Date.parse(result.ultimaActualizacion)))throw Error("Respuesta de seguimiento no válida");
-   const next={status:result.estadoPaquete,lastUpdated:result.ultimaActualizacion};
+   const next={status:result.estadoPaquete,lastUpdated:result.ultimaActualizacion,events:Array.isArray(result.movimientos)?result.movimientos:[]};
    const previous=trackingPreview.get(p.id);
-   if(!previous||previous.status!==next.status||previous.lastUpdated!==next.lastUpdated){trackingPreview.set(p.id,next);changed++;}
+   if(!previous||previous.status!==next.status||previous.lastUpdated!==next.lastUpdated||JSON.stringify(previous.events||[])!==JSON.stringify(next.events||[])){trackingPreview.set(p.id,next);changed++;}
    else unchanged++;
    cache[key]={...next,checkedAt:Date.now()};
    writeTrackingCache(cache);
