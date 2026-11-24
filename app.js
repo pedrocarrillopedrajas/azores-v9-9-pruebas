@@ -328,7 +328,7 @@ function render(){
 function azShipStage(status,sent){
  const t=String(status||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
  if(/^(entregado|paquete entregado|entregado al destinatario|paquete entregado al destinatario|recogido por (el )?destinatario)$/.test(t))return 3;
- if(/disponible para (la )?recogida|listo para recoger|a la espera de recogida por el destinatario/.test(t))return 2;
+ if(/disponible para (la )?recogida|listo para recoger|listo para (la )?recogida|esperando a ser recogido|a la espera de recogida por el destinatario/.test(t))return 2;
  if(/de camino|en camino|en transito|clasific|admitido|paquete dejado|en transporte/.test(t)||sent)return 1;
  if(/pendiente de envio|envio creado/.test(t))return 0;
  return -1;
@@ -336,8 +336,8 @@ function azShipStage(status,sent){
 function azShipCard(p){
  const sh=p.shipping||{}, e=trackingPreview.get(p.id)||sh, status=e.status||"Pendiente de seguimiento", stage=azShipStage(status,sh.sentAt);
  const date=v=>v&&Number.isFinite(Date.parse(v))?new Date(v).toLocaleString("es-ES",{dateStyle:"short",timeStyle:"short"}):"";
- const events=Array.isArray(e.events)?e.events:[];
- return `<article class="az-ship-card"><header><div><small>${esc(sh.carrier||"Transportista sin indicar")}</small><h3>${esc(p.name)}</h3><small>${esc(p.buyer||"Comprador sin indicar")}</small></div><span class="pill">${esc(status)}</span></header><div class="az-ship-progress" aria-label="Fase orientativa del envío">${["Preparación","En camino","Recogida","Entregado"].map((label,i)=>`<div class="${stage>=i?"done":""}"><span>${stage>i?"✓":i+1}</span><small>${label}</small></div>`).join("")}</div><div class="az-ship-history"><strong>Movimientos disponibles</strong>${events.length?events.map(x=>`<div class="az-ship-event">${esc(x.mensaje||x.status||x.description||"Movimiento")}<small>${esc(date(x.fecha||x.date||x.datetime))}</small></div>`).join(""):`<div class="az-ship-event">${esc(status)}<small>${esc(date(e.lastUpdated)||"Sin fecha de actualización")}</small></div>`}${sh.sentAt?`<div class="az-ship-event">Fecha de envío <small>${esc(sh.sentAt)}</small></div>`:""}</div><footer>${safeTrackingLink(sh.trackingUrl)}<button class="edit-product" data-ship-edit="${esc(p.id)}">Editar envío</button></footer></article>`;
+ const events=Array.isArray(e.events)?[...e.events].sort((a,b)=>(Date.parse(b.fecha||b.date||b.datetime)||0)-(Date.parse(a.fecha||a.date||a.datetime)||0)):[];
+ return `<article class="az-ship-card"><header><div><small>${esc(sh.carrier||"Transportista sin indicar")}</small><h3>${esc(p.name)}</h3><small>${esc(p.buyer||"Comprador sin indicar")}</small></div><span class="pill">${esc(status)}</span></header><div class="az-ship-progress" aria-label="Fase orientativa del envío">${["Preparación","En camino","Recogida","Entregado"].map((label,i)=>`<div class="${stage>=i?"done":""}"><span>${stage>i?"✓":i+1}</span><small>${label}</small></div>`).join("")}</div><div class="az-ship-history"><strong>Movimientos disponibles</strong>${events.length?events.map(x=>`<div class="az-ship-event">${esc(x.estado||x.mensaje||x.message||x.status||x.description||"Descripción no disponible")}<small>${esc(date(x.fecha||x.date||x.datetime))}</small></div>`).join(""):`<div class="az-ship-event">${esc(status)}<small>${esc(date(e.lastUpdated)||"Sin fecha de actualización")}</small></div>`}${sh.sentAt?`<div class="az-ship-event">Fecha de envío <small>${esc(sh.sentAt)}</small></div>`:""}</div><footer>${safeTrackingLink(sh.trackingUrl)}<button class="edit-product" data-ship-edit="${esc(p.id)}">Editar envío</button></footer></article>`;
 }
 function vintedGoNumber(p){
  if(!isSold(p)||p.paymentStatus==="Cobrado"||!/vinted\s*go/i.test(p.shipping?.carrier||""))return null;
