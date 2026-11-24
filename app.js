@@ -794,3 +794,6 @@ document.getElementById("registerPushButton")?.addEventListener("click", async (
   } catch(error) { say("No se pudo activar: " + (error?.message || String(error))); }
   finally { button.disabled = false; }
 });
+
+// V9.45: preferencia visual local, independiente de los datos.
+(()=>{const root=document.documentElement,button=document.getElementById('azThemeToggle');if(!button)return;function apply(dark){root.dataset.theme=dark?'dark':'light';button.textContent=dark?'☀':'☾';button.setAttribute('aria-pressed',String(dark));button.setAttribute('aria-label',dark?'Activar modo claro':'Activar modo oscuro');button.title=button.getAttribute('aria-label');}apply(root.dataset.theme==='dark');button.addEventListener('click',()=>{const dark=root.dataset.theme!=='dark';apply(dark);try{localStorage.setItem('azores-theme',dark?'dark':'light')}catch(e){}});})();

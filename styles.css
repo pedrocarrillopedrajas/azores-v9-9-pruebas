@@ -154,3 +154,27 @@ body{background:var(--bg);color:var(--ink)}
 
 /* V9.44 */
 .az-inventory-card{display:flex;flex-direction:column}.az-inventory-body{flex:1;display:flex;flex-direction:column}.az-inventory-body .action-group{margin-top:auto}.az-ship-history{overscroll-behavior:contain}.az-recent[hidden]{display:none!important}.az-recent{background:var(--white);border:1px solid var(--line);border-radius:18px;padding:18px;margin:0 0 18px;box-shadow:0 4px 15px #183c2910;animation:az-appear .22s ease-out}.az-recent header{margin-bottom:10px}.az-recent h2{font-size:18px;margin:0 0 4px}.az-recent small{color:var(--muted)}.az-recent-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.az-recent-icon{width:34px;height:34px;flex:none;border-radius:11px;display:grid;place-items:center;color:white;font-weight:700}.az-recent-detail{flex:1;min-width:0;display:grid;gap:3px;overflow-wrap:anywhere;font-size:13px}.az-recent-amount{white-space:nowrap;font-size:14px}.az-recent-note{display:block;margin-top:12px;font-size:11px}@media(prefers-reduced-motion:reduce){.az-recent{animation:none}}
+
+/* V9.45 — tema oscuro local */
+.az-theme-toggle{border:1px solid #9d8759;background:transparent;color:#e2d4ad;border-radius:50%;width:34px;height:34px;flex:none;display:grid;place-items:center;font-size:22px;line-height:1;cursor:pointer}.az-theme-toggle:focus-visible{outline:2px solid #e2d4ad;outline-offset:2px}
+@media(max-width:650px){.header-actions .prototype-tag{display:none}.az-theme-toggle{width:32px;height:32px}.brand small{font-size:8px;letter-spacing:.7px}}
+:root[data-theme=dark]{color-scheme:dark;--navy:#9bd5b6;--blue:#d9bb82;--bg:#101b18;--ink:#e4eee8;--muted:#a9beb2;--line:#34483e;--white:#1b2b24;--gold:#b99a61}
+[data-theme=dark] .topbar,[data-theme=dark] .primary{background:#163f36;color:#fff}
+[data-theme=dark] :is(.stat,.content-card,.backup-panel,.login-card,.home-mini-card,.az-calendar,dialog){background:var(--white);color:var(--ink);border-color:var(--line)}
+[data-theme=dark] :is(.finance-box,.simple-panel,.sale-summary,.secondary,.sales-group-toggle,.edit-product,.az-calendar-toggle,.az-month-nav button,.thumb,.az-inventory-photo){background:#253a30;color:var(--ink);border-color:var(--line)}
+[data-theme=dark] :is(.secondary,.edit-product,.tabs button,.az-day):hover,[data-theme=dark] .sales-group-toggle.selected{background:#344c3e;color:var(--ink)}
+[data-theme=dark] .tabs button.active,[data-theme=dark] .az-day.selected{background:#304d3d;color:#c6f0d7;border-color:#638c73}
+[data-theme=dark] :is(input,select,textarea){background:#14231c;color:var(--ink);border-color:#52695a}
+[data-theme=dark] :is(label,.finance-box small,.sale-help,.backup-panel p,.az-weekday,.az-calendar-legend span,.az-day-activity>p,.az-activity-row span,.az-activity-row small,.az-calendar-note){color:var(--muted)}
+[data-theme=dark] :is(.az-day,.az-day-activity>strong,.az-activity-row b,.az-inventory-cost strong){color:#a6dfbd}
+[data-theme=dark] :is(.az-calendar-legend,.az-activity-row){border-color:var(--line)}
+[data-theme=dark] .pill{background:#304b3b;color:#c0ebcf}
+[data-theme=dark] .delete-product{color:#ffb3ae;border-color:#885651}
+[data-theme=dark] .delete-product:hover{background:#50302e}
+[data-theme=dark] .notice{background:#3c3020;color:#f0d8a4;border-color:#78623b}
+[data-theme=dark] .az-ship-progress span{background:#34483e;color:#c4d6ca}
+[data-theme=dark] .az-ship-progress .done span{background:#28734c;color:white}
+[data-theme=dark] .eyebrow{color:#d9bb82}
+[data-theme=dark] a{color:#a9d8ff}
+[data-theme=dark] .azores-photo-viewer{background:transparent}
+[data-theme=dark] #loginError{color:#ffb3ae}
