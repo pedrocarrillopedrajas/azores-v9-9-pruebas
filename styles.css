@@ -191,3 +191,4 @@ body{background:var(--bg);color:var(--ink)}
 .op-market-group{grid-column:1/-1;min-width:0}.op-highlight{border:2px solid #187044;background:#eaf7ef}
 
 .op-result.op-profitable{border:2px solid #39745c;background:#f1f8f3;box-shadow:0 2px 8px #163e3020;}
+.op-result.op-highlight{background:#edf6f0;border:1px solid #39745c;box-shadow:0 2px 7px #163e3014;padding:12px;gap:9px}.op-result.op-highlight img{height:185px;object-fit:contain;background:#fff}.op-result.op-highlight>a{display:block;background:#163f35;color:white;text-align:center;padding:9px;border-radius:8px;text-decoration:none}.op-result.op-highlight summary{cursor:pointer;color:#163f35;font-weight:600}
