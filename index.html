@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#163F36">
   <script>try{if(localStorage.getItem("azores-theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}</script>
   <meta name="description" content="AZORES - Gestión de compraventa">
@@ -14,7 +14,7 @@
 <body>
   <header class="topbar">
     <div class="brand"><img class="brand-logo" src="logo-azores.jpg" alt="Logo AZORES"><div class="brand-text"><div class="brand-title"><strong>AZORES</strong><svg class="spain-flag" viewBox="0 0 30 20" role="img" aria-label="Bandera de España" xmlns="http://www.w3.org/2000/svg"><rect width="30" height="20" rx="1" fill="#AA151B"/><path d="M0 5h30v10H0z" fill="#F1BF00"/></svg></div><span class="spain-stripe" aria-hidden="true"></span><small>GESTIÓN DE COMPRAVENTA</small></div></div>
-    <div class="header-actions"><button type="button" id="azThemeToggle" class="az-theme-toggle" aria-label="Activar modo oscuro" aria-pressed="false">☾</button><span class="prototype-tag">GESTIÓN PRIVADA</span><details class="backup-dropdown">
+    <div class="header-actions"><button type="button" id="azThemeToggle" class="az-theme-toggle" aria-label="Activar modo oscuro" aria-pressed="false">☾</button><span class="prototype-tag">PRUEBAS · SOLO LECTURA</span><details class="backup-dropdown">
           <summary aria-label="Abrir copias de seguridad">▣ Copias <span aria-hidden="true" class="backup-chevron">⌄</span></summary>
           <section class="backup-panel" aria-label="Protección de datos"><div><strong>Protección de datos</strong><p>Guarda una copia de todas las operaciones y cuentas, incluidas las fotos. Puedes restaurarla más adelante.</p></div><div class="action-group"><button type="button" class="primary" id="exportBackup">Descargar copia</button><button type="button" class="secondary" id="importBackup">Restaurar copia</button><button type="button" class="secondary" id="clearAllPhotos" title="Requiere descargar una copia antes">Eliminar todas las fotos</button><input type="file" id="backupFile" accept=".json,application/json" hidden><button type="button" class="secondary" id="logoutButton">Cerrar sesión</button></div>
             <div role="group" aria-label="Notificaciones">
@@ -44,14 +44,14 @@
       </div>
     </section>
     <div class="az-dashboard-layout" id="azDashboardLayout">
-      <aside class="az-calendar" id="azCalendar" aria-label="Calendario de actividad">
+      <div class="az-left-rail"><section class="az-side-menu"><button type="button" id="azMenuToggle" aria-controls="azSideTabs" aria-expanded="true" aria-label="Plegar menú">☰ <span class="az-nav-label">Menú</span></button><nav class="tabs az-side-tabs" id="azSideTabs" aria-label="Secciones"><button type="button" data-tab="Inicio" title="Inicio" aria-label="Inicio"><span aria-hidden="true" class="az-nav-icon">⌂</span><span class="az-nav-label">Inicio</span></button><button type="button" data-tab="Compras" title="Compras" aria-label="Compras"><span aria-hidden="true" class="az-nav-icon">＋</span><span class="az-nav-label">Compras</span></button><button type="button" data-tab="Inventario" title="Inventario" aria-label="Inventario"><span aria-hidden="true" class="az-nav-icon">▦</span><span class="az-nav-label">Inventario</span></button><button type="button" data-tab="Ventas" title="Ventas" aria-label="Ventas"><span aria-hidden="true" class="az-nav-icon">€</span><span class="az-nav-label">Ventas</span></button><button type="button" data-tab="Envíos" title="Envíos" aria-label="Envíos"><span aria-hidden="true" class="az-nav-icon">↗</span><span class="az-nav-label">Envíos</span></button><button type="button" data-tab="Cuentas" title="Cuentas" aria-label="Cuentas"><span aria-hidden="true" class="az-nav-icon">▤</span><span class="az-nav-label">Cuentas</span></button><button type="button" data-tab="Beneficios" title="Beneficios" aria-label="Beneficios"><span aria-hidden="true" class="az-nav-icon">↗</span><span class="az-nav-label">Beneficios</span></button><button type="button" data-tab="Oportunidades" title="Oportunidades" aria-label="Oportunidades"><span aria-hidden="true" class="az-nav-icon">◎</span><span class="az-nav-label">Oportunidades</span></button></nav></section><aside class="az-calendar" id="azCalendar" aria-label="Calendario de actividad">
         <div class="az-calendar-head"><strong>📅 Actividad</strong><button type="button" id="azCalendarToggle" class="az-calendar-toggle" aria-expanded="true" aria-controls="azCalendarBody" title="Abrir o cerrar calendario">◀</button></div>
         <div id="azCalendarBody"><div class="az-month-nav"><button type="button" id="azPrevMonth" aria-label="Mes anterior">‹</button><strong id="azMonthTitle"></strong><button type="button" id="azNextMonth" aria-label="Mes siguiente">›</button></div>
           <div class="az-calendar-grid" id="azCalendarGrid"></div>
           <div class="az-calendar-legend"><span><i class="az-dot az-buy"></i> Compras</span><span><i class="az-dot az-sale"></i> Ventas</span><span><i class="az-dot az-ship"></i> Envíos</span><span><i class="az-dot az-paid"></i> Cobros*</span></div>
           <div class="az-day-activity" id="azDayActivity" aria-live="polite"></div><small class="az-calendar-note">* Envíos y cobros aparecen cuando tienen fecha real registrada.</small>
         </div>
-      </aside>
+      </aside></div>
       <div class="az-dashboard-main">
     <section class="home-summary" id="homeSummary" aria-label="Resumen de AZORES">
       <div class="home-summary-head"><span class="eyebrow">E S T O　 E S　 A Z O R E S</span><h2>El futuro lo construimos nosotros.</h2></div>
@@ -61,18 +61,16 @@
         <article class="home-mini-card"><span>Productos sin vender</span><strong id="homeStock">0</strong></article>
       </div>
     </section>
-    <section id="azRecent" class="az-recent" aria-label="Actividad reciente" hidden></section>
+    <section id="azGoals" class="az-goals" aria-label="Objetivos económicos" hidden></section><section id="azRecent" class="az-recent" aria-label="Actividad reciente" hidden></section>
     <section class="content-card">
       <div class="section-heading"><div><p class="eyebrow">GESTIÓN</p><h2 id="sectionTitle">Inventario</h2></div><button class="primary" id="newProduct">＋ Añadir producto</button></div>
-      <nav class="tabs" aria-label="Secciones">
-        <button data-tab="Inicio" class="active">Inicio</button><button data-tab="Compras">Compras</button><button data-tab="Inventario">Inventario</button><button data-tab="Ventas">Ventas</button><button data-tab="Envíos">Envíos</button><button data-tab="Cuentas">Cuentas</button><button data-tab="Beneficios">Beneficios</button>
-      </nav>
+
       <div id="view"></div>
     </section>
       </div>
     </div>
-    <footer>AZORES · Versión 9.0 · Diseñado para ordenador y móvil</footer>
-  </main>
+    <footer>AZORES · Versión 9.66 PRUEBAS · Diseñado para ordenador y móvil</footer>
+  <nav class="az-mobile-nav" aria-label="Navegación móvil"><button type="button" data-tab="Inicio"><span aria-hidden="true">⌂</span>Inicio</button><button type="button" data-tab="Inventario"><span aria-hidden="true">▦</span>Stock</button><button type="button" data-tab="Ventas"><span aria-hidden="true">€</span>Ventas</button><button type="button" data-tab="Envíos"><span aria-hidden="true">↗</span>Envíos</button><button type="button" id="azMoreToggle" aria-expanded="false" aria-controls="azMoreMenu"><span aria-hidden="true">☰</span>Más</button></nav><div id="azMoreMenu" class="az-more-menu" hidden><button type="button" data-tab="Compras">Compras</button><button type="button" data-tab="Cuentas">Cuentas</button><button type="button" data-tab="Beneficios">Beneficios</button><button type="button" data-tab="Oportunidades">Oportunidades</button></div></main>
   <dialog id="productDialog">
     <form id="productForm" method="post">
       <div class="dialog-head"><div><p class="eyebrow">INVENTARIO</p><h2 id="dialogTitle">Nuevo producto</h2></div><button type="button" class="close" id="closeDialog">×</button></div>
@@ -115,6 +113,7 @@
       <div class="dialog-actions"><button type="button" class="secondary" id="cancelShippingDialog">Cancelar</button><button type="submit" class="primary">Guardar envío</button></div>
     </form>
   </dialog>
+  <script src="oportunidades.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

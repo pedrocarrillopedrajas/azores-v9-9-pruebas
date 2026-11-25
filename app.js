@@ -1,6 +1,6 @@
 const SUPABASE_URL="https://lsuopaybsfdlofigxlac.supabase.co";
 const SUPABASE_KEY="sb_publishable_MEXZiitQlDx4lrh_vV4dag_8sbBKe7O";
-const SESSION_KEY="azores-cloud-session-v8";
+const SESSION_KEY="azores-pruebas-session-v947";
 let cloudSession=null, cloudReady=false, cloudSaving=false, cloudDirty=false, cloudTimer=null;
 const cloudStatus=()=>document.getElementById("cloudStatus");
 function setCloudStatus(message){const el=cloudStatus();if(el)el.textContent=message;}
@@ -13,6 +13,8 @@ async function refreshCloudSession(){
  cloudSession=j;localStorage.setItem(SESSION_KEY,JSON.stringify(j));return j;
 }
 async function cloudFetch(path,options={}){
+ const method=(options.method||"GET").toUpperCase();
+ if(method!=="GET" && !(method==="POST" && ["/functions/v1/azores-comparador-precios","/functions/v1/azores-precio-oficial"].includes(path)))throw Error("Modo pruebas: escritura bloqueada");
  let r=await fetch(SUPABASE_URL+path,{...options,headers:{...cloudHeaders(cloudSession.access_token),...(options.headers||{})}});
  if(r.status===401){await refreshCloudSession();r=await fetch(SUPABASE_URL+path,{...options,headers:{...cloudHeaders(cloudSession.access_token),...(options.headers||{})}});}
  if(!r.ok){let detail="";try{const j=await r.json();detail=j.message||j.msg||j.error_description||j.error||""}catch(_){}throw Error(detail||"Error de conexión ("+r.status+")");}
@@ -26,6 +28,7 @@ function photoIsStored(value){return typeof value==="string"&&value.startsWith(P
 function photoPath(value){return value.slice(PHOTO_PREFIX.length);}
 function photoDisplay(value){return photoIsStored(value)?(photoUrlCache.get(photoPath(value))||""):value||"";}
 async function photoStorageFetch(path,options={}){
+ if((options.method||"GET").toUpperCase()!=="GET")throw Error("Modo pruebas: escritura de fotos bloqueada");
  const request=async()=>fetch(SUPABASE_URL+path,{...options,headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+cloudSession.access_token,...(options.headers||{})}});
  let response=await request();if(response.status===401){await refreshCloudSession();response=await request();}
  if(!response.ok){let message="Error de Storage ("+response.status+")";try{const d=await response.json();message=d.message||d.error||message;}catch{}throw Error(message);}
@@ -82,6 +85,7 @@ async function cleanupUnusedPhotos(){
  }
 }
 function queueCloudSave(){
+ return;
  if(!cloudReady)return;
  cloudDirty=true;setCloudStatus("Cambios pendientes de sincronizar…");
  clearTimeout(cloudTimer);cloudTimer=setTimeout(flushCloudSave,350);
@@ -124,7 +128,7 @@ async function startCloud(){
 }
 function signOutCloud(){
  if(cloudDirty||cloudSaving){alert("Hay cambios sin sincronizar. Reintenta la sincronización antes de salir.");return;}
- cloudReady=false;cloudSession=null;for(const url of photoUrlCache.values())if(url.startsWith("blob:"))URL.revokeObjectURL(url);photoUrlCache.clear();localStorage.removeItem(SESSION_KEY);
+ oportunidad.epoch++; oportunidad.resultados=[]; oportunidad.ocupado=false; cloudReady=false;cloudSession=null;for(const url of photoUrlCache.values())if(url.startsWith("blob:"))URL.revokeObjectURL(url);photoUrlCache.clear();localStorage.removeItem(SESSION_KEY);
  products=[];finances={opening:{Aurora:0,Pedro:0},contributions:[],withdrawals:[],capitalRepayments:[]};
  localStorage.removeItem(KEY);localStorage.removeItem(FIN_KEY);setCloudLock(true);
  document.getElementById("loginForm").reset();document.getElementById("loginError").textContent="";
@@ -145,9 +149,9 @@ document.getElementById("retrySync").addEventListener("click",()=>{if(!cloudRead
 window.addEventListener("online",()=>{if(cloudDirty)flushCloudSave()});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&cloudDirty)flushCloudSave()});
 setCloudLock(true);startCloud();
-const KEY="azores-prototype-products-v1";
+const KEY="azores-pruebas-products-v947";
 let products=JSON.parse(localStorage.getItem(KEY)||"[]");
-const FIN_KEY="azores-finances-v7";
+const FIN_KEY="azores-pruebas-finances-v947";
 let finances=JSON.parse(localStorage.getItem(FIN_KEY)||'{"opening":{"Aurora":0,"Pedro":0},"contributions":[],"withdrawals":[]}');
 finances.opening ||= {Aurora:0,Pedro:0};finances.contributions ||= [];finances.withdrawals ||= [];finances.capitalRepayments ||= [];
 function saveFin(){cacheLocalState();render();queueCloudSave()}
@@ -169,10 +173,9 @@ function financesSummary(){
  for(const x of finances.withdrawals||[]){const r=normalizedAccount(x.account);if(r)balances[r]-=Number(x.amount)||0}
  const repaid={Aurora:0,Pedro:0};
  for(const x of finances.capitalRepayments||[]){const who=normalizedAccount(x.account);if(who){repaid[who]+=Number(x.amount)||0;balances[who]-=Number(x.amount)||0}}
- for(const p of products){const r=p.personalWithdrawal;if(r&&normalizedAccount(r.account))repaid[normalizedAccount(r.account)]+=Number(r.amount)||0;}
  const capitalPending={Aurora:Math.max(0,capital.Aurora-repaid.Aurora),Pedro:Math.max(0,capital.Pedro-repaid.Pedro)};
  const pending=products.reduce((t,p)=>t+(isSold(p)&&p.paymentStatus!=="Cobrado"?Number(p.salePrice)||0:0),0);
- const inventory=products.reduce((t,p)=>t+(inStock(p)?Number(p.purchasePrice)||0:0),0);
+ const inventory=products.reduce((t,p)=>t+(!isSold(p)?Number(p.purchasePrice)||0:0),0);
  const profit=products.reduce((t,p)=>t+(isSold(p)?Number(p.salePrice)-Number(p.purchasePrice||0):0),0);
  return {balances,capital,repaid,capitalPending,pending,inventory,profit,total:balances.Aurora+balances.Pedro};
 }
@@ -194,11 +197,10 @@ function stats(){
  document.getElementById("homeCash").textContent=money(f.total);
  if(f.total<=0){const cata=document.getElementById("cataCelebration");if(cata)cata.hidden=true;}
  document.getElementById("homePending").textContent=money(f.pending);
- document.getElementById("homeStock").textContent=products.filter(inStock).length;
+ document.getElementById("homeStock").textContent=products.filter(p=>!isSold(p)).length;
 }
 function isSold(p){return p.salePrice!==""&&p.salePrice!=null}
-function inStock(p){return !isSold(p)&&!p.personalWithdrawal;}
-function productStatus(p){return p.personalWithdrawal?"Retirada personal · "+p.personalWithdrawal.account:isSold(p)?"Vendido":(p.status||"Sin vender")}
+function productStatus(p){return isSold(p)?"Vendido":(p.status||"Sin vender")}
 // AZORES V9.38: calendario visual de solo lectura. No altera datos ni sincronización.
 const azCalendarState={month:new Date().getMonth(),year:new Date().getFullYear(),selected:new Date().getDate(),collapsed:window.matchMedia('(max-width:760px)').matches};
 function azCalendarDate(value){
@@ -266,8 +268,8 @@ function azInventoryToolbar(rows){return `<div class="az-inventory-toolbar"><str
 $("#view").addEventListener("click",e=>{const b=e.target.closest("[data-inventory-mode]");if(b){azInventoryMode=b.dataset.inventoryMode;render();}});
 function render(){
  queueMicrotask(()=>hydrateStoredPhotos(document));
- stats();azRenderCalendar();$("#sectionTitle").textContent=activeTab;
- const home=activeTab==="Inicio";azRenderRecent(home);
+ stats();azRenderGoals();azRenderCalendar();$("#sectionTitle").textContent=activeTab;
+ const home=activeTab==="Inicio";azRenderRecent(home);$("#azGoals").hidden=!home;
  if(home && cataLastTab!=="Inicio") {
    const cata=document.getElementById("cataCelebration");
    if(cata){
@@ -288,18 +290,20 @@ function render(){
  document.querySelector(".content-card").classList.toggle("home-navigation",home);
  document.querySelector(".section-heading").hidden=home;
  document.querySelector(".welcome").hidden=home;
- document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===activeTab));
+ document.querySelectorAll("[data-tab]").forEach(b=>{const on=b.dataset.tab===activeTab;b.classList.toggle("active",on);if(on)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current");});
  const view=$("#view");
+ $("#newProduct").hidden=activeTab==="Oportunidades";
+ if(activeTab==="Oportunidades"){renderOportunidades(view);return;}
  if(home){view.innerHTML="";return;}
  if(activeTab==="Compras"||activeTab==="Inventario"){
-   const rows=products.filter(p=>activeTab==="Compras"||inStock(p));
+   const rows=products.filter(p=>activeTab==="Compras"||!isSold(p));
    rows.sort((a,b)=>String(b.purchaseDate||"").localeCompare(String(a.purchaseDate||"")) || products.indexOf(b)-products.indexOf(a));
    if(!rows.length){view.innerHTML=`<div class="empty"><div class="symbol">▧</div><h3>${activeTab==="Compras"?"Todavía no hay compras":"Tu inventario está vacío"}</h3><p>Añade el primer producto para empezar a organizar AZORES.</p><button class="primary" id="emptyAdd">＋ Añadir producto</button></div>`;$("#emptyAdd").onclick=()=>openDialog();return}
    if(activeTab==="Inventario" && azInventoryMode==="cards"){
-     view.innerHTML=`${azInventoryToolbar(rows)}<div class="az-inventory-grid">${rows.map(p=>`<article class="az-inventory-card"><div class="az-inventory-photo">${p.photo?`<img class="zoomable-photo" src="${esc(photoDisplay(p.photo))}" data-storage-photo="${photoIsStored(p.photo)?esc(p.photo):""}" alt="Ampliar foto de ${esc(p.name)}" tabindex="0" role="button" loading="lazy">`:`<span aria-hidden="true">▧</span>`}<span class="az-inventory-status ${productStatus(p)==="Por recibir"?"waiting":productStatus(p)==="Por subir"?"upload":"ready"}">${esc(productStatus(p))}</span></div><div class="az-inventory-body"><h3>${esc(p.name)}</h3><small>Compra: ${esc(p.purchaseDate||"—")} · ${esc(p.account||"—")}</small><div class="az-inventory-cost"><small>Coste</small><strong>${money(p.purchasePrice)}</strong></div><div class="action-group"><button class="edit-product" data-edit="${esc(p.id)}">Editar</button><button class="primary" data-sell="${esc(p.id)}">Vender</button><button class="edit-product" data-personal="${esc(p.id)}">Retirada personal</button><button class="edit-product delete-product" data-delete="${esc(p.id)}">Eliminar</button></div></div></article>`).join("")}</div>`;
+     view.innerHTML=`${azInventoryToolbar(rows)}<div class="az-inventory-grid">${rows.map(p=>`<article class="az-inventory-card"><div class="az-inventory-photo">${p.photo?`<img class="zoomable-photo" src="${esc(photoDisplay(p.photo))}" data-storage-photo="${photoIsStored(p.photo)?esc(p.photo):""}" alt="Ampliar foto de ${esc(p.name)}" tabindex="0" role="button" loading="lazy">`:`<span aria-hidden="true">▧</span>`}<span class="az-inventory-status ${productStatus(p)==="Por recibir"?"waiting":productStatus(p)==="Por subir"?"upload":"ready"}">${esc(productStatus(p))}</span></div><div class="az-inventory-body"><h3>${esc(p.name)}</h3><small>Compra: ${esc(p.purchaseDate||"—")} · ${esc(p.account||"—")}</small><div class="az-inventory-cost"><small>Coste</small><strong>${money(p.purchasePrice)}</strong></div><div class="action-group"><button class="edit-product" data-edit="${esc(p.id)}">Editar</button><button class="primary" data-sell="${esc(p.id)}">Vender</button><button class="edit-product delete-product" data-delete="${esc(p.id)}">Eliminar</button></div></div></article>`).join("")}</div>`;
      return;
    }
-   view.innerHTML=`${activeTab==="Inventario"?azInventoryToolbar(rows):""}<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Compra</th><th>Coste</th><th>Cuenta</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${rows.map(p=>`<tr><td><div class="product-cell">${p.photo?`<img class="thumb zoomable-photo" src="${esc(photoDisplay(p.photo))}" data-storage-photo="${photoIsStored(p.photo)?esc(p.photo):""}" alt="Ampliar foto de ${esc(p.name)}" tabindex="0" role="button" loading="lazy">`:`<span class="thumb">▧</span>`}<strong>${esc(p.name)}</strong></div></td><td>${p.purchaseDate||"—"}</td><td>${money(p.purchasePrice)}</td><td>${esc(p.account||"—")}</td><td><span class="pill">${esc(productStatus(p))}</span></td><td><div class="action-group">${p.personalWithdrawal?`<button class="edit-product" data-undo-personal="${esc(p.id)}">Anular retirada</button>`:`<button type="button" class="edit-product" data-edit="${esc(p.id)}">Editar</button>`}${inStock(p)?`<button type="button" class="edit-product" data-sell="${esc(p.id)}">Vender</button><button class="edit-product" data-personal="${esc(p.id)}">Retirada personal</button><button type="button" class="edit-product delete-product" data-delete="${esc(p.id)}" aria-label="Eliminar compra de ${esc(p.name)}">Eliminar</button>`:""}</div></td></tr>`).join("")}</tbody></table></div>`;
+   view.innerHTML=`${activeTab==="Inventario"?azInventoryToolbar(rows):""}<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Compra</th><th>Coste</th><th>Cuenta</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${rows.map(p=>`<tr><td><div class="product-cell">${p.photo?`<img class="thumb zoomable-photo" src="${esc(photoDisplay(p.photo))}" data-storage-photo="${photoIsStored(p.photo)?esc(p.photo):""}" alt="Ampliar foto de ${esc(p.name)}" tabindex="0" role="button" loading="lazy">`:`<span class="thumb">▧</span>`}<strong>${esc(p.name)}</strong></div></td><td>${p.purchaseDate||"—"}</td><td>${money(p.purchasePrice)}</td><td>${esc(p.account||"—")}</td><td><span class="pill">${esc(productStatus(p))}</span></td><td><div class="action-group"><button type="button" class="edit-product" data-edit="${esc(p.id)}">Editar</button>${!isSold(p)?`<button type="button" class="edit-product" data-sell="${esc(p.id)}">Vender</button><button type="button" class="edit-product delete-product" data-delete="${esc(p.id)}" aria-label="Eliminar compra de ${esc(p.name)}">Eliminar</button>`:""}</div></td></tr>`).join("")}</tbody></table></div>`;
  }else if(activeTab==="Ventas"){
    const sold=products.filter(isSold);
    const byDate=(a,b)=>String(b.saleDate||"").localeCompare(String(a.saleDate||""));
@@ -307,7 +311,7 @@ function render(){
    const paid=sold.filter(p=>p.paymentStatus==="Cobrado").sort(byDate);
    const saleRow=p=>`<tr><td class="sale-product"><div class="product-cell">${p.photo?`<img class="thumb zoomable-photo" src="${esc(photoDisplay(p.photo))}" data-storage-photo="${photoIsStored(p.photo)?esc(p.photo):""}" alt="Ampliar foto de ${esc(p.name)}" tabindex="0" role="button" loading="lazy">`:`<span class="thumb" aria-hidden="true">▧</span>`}<strong>${esc(p.name)}</strong></div></td><td>${esc(p.saleDate||"—")}</td><td>${money(p.salePrice)}</td><td>${esc(p.buyer||"—")}</td><td><span class="pill">${esc(p.paymentStatus||"—")}</span></td><td>${money(Number(p.salePrice)-Number(p.purchasePrice||0))}</td><td><div class="action-group"><button class="edit-product" data-sale-edit="${esc(p.id)}">Editar venta</button><button class="edit-product" data-sale-cancel="${esc(p.id)}">Anular venta</button></div></td></tr>`;
    const current=salesGroupOpen==="pending"?pending:salesGroupOpen==="paid"?paid:null;
-   view.innerHTML=`<div class="action-group sales-toolbar"><button class="primary" id="addSale" ${products.some(inStock)?"":"disabled"}>＋ Registrar venta</button><button type="button" class="sales-group-toggle ${salesGroupOpen==="pending"?"selected":""}" data-sales-group="pending" aria-expanded="${salesGroupOpen==="pending"}">Pendientes (${pending.length}) <span aria-hidden="true">${salesGroupOpen==="pending"?"⌃":"⌄"}</span></button><button type="button" class="sales-group-toggle ${salesGroupOpen==="paid"?"selected":""}" data-sales-group="paid" aria-expanded="${salesGroupOpen==="paid"}">Cobradas (${paid.length}) <span aria-hidden="true">${salesGroupOpen==="paid"?"⌃":"⌄"}</span></button></div>${current?(current.length?`<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Fecha</th><th>Precio venta</th><th>Comprador</th><th>Cobro</th><th>Beneficio</th><th>Acciones</th></tr></thead><tbody>${current.map(saleRow).join("")}</tbody></table></div>`:`<div class="simple-panel"><strong>No hay ventas ${salesGroupOpen==="paid"?"cobradas":"pendientes de cobro"}</strong></div>`):`<div class="simple-panel sales-empty-hint">${sold.length?"Selecciona Pendientes o Cobradas para ver las ventas.":"Aún no hay ventas. Pulsa Registrar venta para empezar."}</div>`}`;
+   view.innerHTML=`<div class="action-group sales-toolbar"><button class="primary" id="addSale" ${products.some(p=>!isSold(p))?"":"disabled"}>＋ Registrar venta</button><button type="button" class="sales-group-toggle ${salesGroupOpen==="pending"?"selected":""}" data-sales-group="pending" aria-expanded="${salesGroupOpen==="pending"}">Pendientes (${pending.length}) <span aria-hidden="true">${salesGroupOpen==="pending"?"⌃":"⌄"}</span></button><button type="button" class="sales-group-toggle ${salesGroupOpen==="paid"?"selected":""}" data-sales-group="paid" aria-expanded="${salesGroupOpen==="paid"}">Cobradas (${paid.length}) <span aria-hidden="true">${salesGroupOpen==="paid"?"⌃":"⌄"}</span></button></div>${current?(current.length?`<div class="table-wrap"><table><thead><tr><th>Producto</th><th>Fecha</th><th>Precio venta</th><th>Comprador</th><th>Cobro</th><th>Beneficio</th><th>Acciones</th></tr></thead><tbody>${current.map(saleRow).join("")}</tbody></table></div>`:`<div class="simple-panel"><strong>No hay ventas ${salesGroupOpen==="paid"?"cobradas":"pendientes de cobro"}</strong></div>`):`<div class="simple-panel sales-empty-hint">${sold.length?"Selecciona Pendientes o Cobradas para ver las ventas.":"Aún no hay ventas. Pulsa Registrar venta para empezar."}</div>`}`;
    const add=$("#addSale");if(add)add.onclick=()=>openSaleDialog();
    view.querySelectorAll("[data-sales-group]").forEach(btn=>btn.onclick=()=>{salesGroupOpen=salesGroupOpen===btn.dataset.salesGroup?null:btn.dataset.salesGroup;render()});
  }else if(activeTab==="Envíos"){
@@ -324,7 +328,7 @@ function render(){
    <article class="finance-box"><small>Inventario a coste</small><strong>${money(f.inventory)}</strong></article>
    <article class="finance-box"><small>Beneficio de ventas</small><strong>${money(f.profit)}</strong></article></div>
    <div class="simple-panel"><h3>Aportaciones personales registradas</h3><p>Aurora: <b>${money(f.capital.Aurora)}</b> · Pedro: <b>${money(f.capital.Pedro)}</b></p><p>Las aportaciones no son beneficios. Una compra pagada con dinero personal cuenta como aportación y no reduce el saldo de Vinted.</p></div>
-   <div class="simple-panel"><h3>Retiradas personales (capital en especie)</h3>${products.filter(p=>p.personalWithdrawal).map(p=>`<p>${esc(p.personalWithdrawal.date)} · ${esc(p.name)} · ${esc(p.personalWithdrawal.account)} · <b>${money(p.personalWithdrawal.amount)}</b></p>`).join("")||"<p>Sin retiradas personales.</p>"}<p>No reducen el saldo Vinted. Para anular, ve a Compras.</p></div><div class="simple-panel"><h3>Devolución de aportaciones</h3><p>Solo registra aquí una devolución real del capital a un socio. Se descuenta del saldo Vinted correspondiente y reduce el capital pendiente de liquidar; no es un gasto ni reduce el beneficio.</p><div class="form-grid"><label>Socio<select id="repayOwner"><option>Aurora</option><option>Pedro</option></select></label><label>Importe (€)<input id="repayAmount" type="number" min="0.01" step="0.01"></label></div><button class="primary" id="addRepayment">Registrar devolución de capital</button></div>
+   <div class="simple-panel"><h3>Devolución de aportaciones</h3><p>Solo registra aquí una devolución real del capital a un socio. Se descuenta del saldo Vinted correspondiente y reduce el capital pendiente de liquidar; no es un gasto ni reduce el beneficio.</p><div class="form-grid"><label>Socio<select id="repayOwner"><option>Aurora</option><option>Pedro</option></select></label><label>Importe (€)<input id="repayAmount" type="number" min="0.01" step="0.01"></label></div><button class="primary" id="addRepayment">Registrar devolución de capital</button></div>
    <div class="simple-panel"><h3>Saldos de partida (datos de prueba)</h3><p>Configura aquí el saldo inicial de cada cuenta antes de las operaciones registradas en esta versión. No incluyas aquí ingresos que ya figuren como ventas cobradas.</p><div class="form-grid"><label>Aurora (€)<input id="openingAurora" type="number" step="0.01" value="${finances.opening.Aurora||0}"></label><label>Pedro (€)<input id="openingPedro" type="number" step="0.01" value="${finances.opening.Pedro||0}"></label></div><button class="primary" id="saveOpening">Guardar saldos iniciales</button></div>
    <div class="simple-panel"><h3>Registrar aportación adicional</h3><p>Para dinero personal aportado al negocio que no esté ya reflejado en una compra personal.</p><div class="form-grid"><label>Socio<select id="capitalOwner"><option>Aurora</option><option>Pedro</option></select></label><label>Importe (€)<input id="capitalAmount" type="number" min="0.01" step="0.01"></label></div><label><input id="capitalToVinted" type="checkbox"> El dinero se ingresó en el saldo Vinted de ese socio</label><p><button class="primary" id="addCapital">Añadir aportación</button></p></div>
    <div class="simple-panel"><h3>Registrar retirada de saldo</h3><p>Dinero retirado de Vinted; se descuenta de la caja de AZORES. No modifica automáticamente las aportaciones ni el reparto de beneficios.</p><div class="form-grid"><label>Cuenta<select id="withdrawOwner"><option>Aurora</option><option>Pedro</option></select></label><label>Importe (€)<input id="withdrawAmount" type="number" min="0.01" step="0.01"></label></div><button class="primary" id="addWithdrawal">Registrar retirada</button></div>`;
@@ -434,7 +438,6 @@ const dialog=$("#productDialog");
 function openDialog(id=null){
  editingId=typeof id==="string"?id:null;
  const p=products.find(item=>item.id===editingId);
- if(p?.personalWithdrawal)return alert("Anula primero la retirada personal para editar la compra.");
  const form=$("#productForm");form.reset();$("#saveProductButton").disabled=false;
  $("#productFormMessage").textContent="";
  photoData=p?.photo||"";
@@ -452,7 +455,7 @@ function openDialog(id=null){
  dialog.showModal();
 }
 $("#newProduct").onclick=()=>openDialog();$("#newProductTop").onclick=()=>openDialog();$("#closeDialog").onclick=()=>dialog.close();$("#cancelDialog").onclick=()=>dialog.close();
-document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{activeTab=b.dataset.tab;if(activeTab==="Ventas")salesGroupOpen=null;render();if(activeTab==="Envíos")refreshVintedGoPreviews()}));
+document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{activeTab=b.dataset.tab;azCloseMore();if(activeTab==="Ventas")salesGroupOpen=null;render();if(false)refreshVintedGoPreviews()}));
 function updateProductPhotoPreview(){
  $("#photoPreview").innerHTML=photoData?`<img src="${esc(photoDisplay(photoData))}" data-storage-photo="${photoIsStored(photoData)?esc(photoData):""}" alt="Vista previa">`:"";
  hydrateStoredPhotos($("#photoPreview"));
@@ -500,7 +503,6 @@ function deletePurchase(id){
  if(cloudDirty||cloudSaving){alert("Hay cambios pendientes de sincronizar. Espera a que aparezca 'Sincronizado en Supabase' antes de eliminar.");return;}
  const p=products.find(x=>x.id===id);
  if(!p)return;
- if(p.personalWithdrawal)return alert("Anula primero la retirada personal.");
  if(isSold(p)){alert("Esta compra tiene una venta registrada. Primero anula la venta si realmente quieres eliminar la compra.");return;}
  if(!confirm(`¿Eliminar definitivamente la compra de "${p.name}"?\n\nSe quitará también del inventario y se recalcularán las cuentas. Esta acción no se puede deshacer desde la aplicación.\n\n¿Quieres continuar?`))return;
  products=products.filter(x=>x.id!==id);
@@ -537,7 +539,7 @@ const saleDialog=$("#saleDialog"),saleForm=$("#saleForm");
 function openSaleDialog(id=null,edit=false){
  editingSaleId=edit?id:null;
  const p=products.find(x=>x.id===id);
- const choices=products.filter(x=>inStock(x)||x.id===editingSaleId);
+ const choices=products.filter(x=>!isSold(x)||x.id===editingSaleId);
  if(!choices.length)return;
  saleForm.reset();
  $("#saleProduct").innerHTML=choices.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("");
@@ -573,7 +575,7 @@ $("#cancelSaleDialog").onclick=()=>saleDialog.close();
 saleForm.addEventListener("submit",e=>{
  e.preventDefault();
  const p=products.find(x=>x.id===(editingSaleId||$("#saleProduct").value));if(!p)return;
- if(!editingSaleId&&!inStock(p))return alert("Este producto ya figura como vendido.");
+ if(!editingSaleId&&isSold(p))return alert("Este producto ya figura como vendido.");
  if(!editingSaleId){p.shipping={carrier:"",trackingNumber:"",trackingUrl:"",status:"Pendiente de envío"}}
  if(!editingSaleId)p.statusBeforeSale=p.status&&p.status!=="Vendido"?p.status:"Sin vender";
  p.saleDate=saleForm.elements.saleDate.value;
@@ -802,13 +804,14 @@ document.getElementById("registerPushButton")?.addEventListener("click", async (
 // V9.45: preferencia visual local, independiente de los datos.
 (()=>{const root=document.documentElement,button=document.getElementById('azThemeToggle');if(!button)return;function apply(dark){root.dataset.theme=dark?'dark':'light';button.textContent=dark?'☀':'☾';button.setAttribute('aria-pressed',String(dark));button.setAttribute('aria-label',dark?'Activar modo claro':'Activar modo oscuro');button.title=button.getAttribute('aria-label');}apply(root.dataset.theme==='dark');button.addEventListener('click',()=>{const dark=root.dataset.theme!=='dark';apply(dark);try{localStorage.setItem('azores-theme',dark?'dark':'light')}catch(e){}});})();
 
-// V9.46: devolución de capital en especie; conserva la compra original.
-const personalDialog=document.createElement("dialog");
-personalDialog.innerHTML=`<form method="dialog" id="personalForm"><h2>Retirada personal</h2><p id="personalName"></p><label>Socio<select id="personalOwner"><option>Aurora</option><option>Pedro</option></select></label><p id="personalPreview"></p><p>No es una venta ni un movimiento de saldo. Confirma solo si ambos socios autorizan la devolución en especie.</p><div class="action-group"><button type="button" class="edit-product" id="personalCancel">Cancelar</button><button type="submit" class="primary">Confirmar retirada</button></div></form>`;
-document.body.append(personalDialog);
-let personalId=null;
-function personalReady(){if(!cloudReady||cloudDirty||cloudSaving){alert("Espera a que AZORES esté sincronizada.");return false;}return true;}
-function personalPreview(){const p=products.find(x=>x.id===personalId);if(!p)return;const who=$("#personalOwner").value,n=Number(p.purchasePrice),pending=financesSummary().capitalPending[who];$("#personalPreview").textContent=`Coste: ${money(n)} · Capital pendiente: ${money(pending)} → ${money(pending-n)}`;}
-$("#personalOwner").onchange=personalPreview;$("#personalCancel").onclick=()=>personalDialog.close();
-$("#view").addEventListener("click",e=>{const b=e.target.closest("[data-personal]"),u=e.target.closest("[data-undo-personal]");if(!b&&!u)return;if(!personalReady())return;const p=products.find(x=>x.id===(b?b.dataset.personal:u.dataset.undoPersonal));if(!p)return;if(u){if(p.personalWithdrawal&&confirm("¿Anular retirada y devolver el producto al inventario?")){delete p.personalWithdrawal;save();}return;}if(!inStock(p))return;personalId=p.id;$("#personalName").textContent=p.name;$("#personalOwner").value=normalizedAccount(p.account)||"Aurora";personalPreview();personalDialog.showModal();});
-$("#personalForm").onsubmit=e=>{e.preventDefault();if(!personalReady())return;const p=products.find(x=>x.id===personalId),who=$("#personalOwner").value;if(!p||!inStock(p)||!normalizedAccount(who))return;const n=Number(p.purchasePrice);if(!Number.isFinite(n)||n<0||n>financesSummary().capitalPending[who]+0.000001)return alert("Importe inválido o capital pendiente insuficiente.");p.personalWithdrawal={account:who,amount:n,date:azToday()};personalDialog.close();save();};
+// V9.46: presentación exclusivamente; usa el resumen contable existente.
+function azRenderGoals(){
+ const f=financesSummary();
+ function bar(label,value,target,detail){const pct=target>0?Math.max(0,Math.min(100,value/target*100)):0;return `<div class="az-goal"><div class="az-goal-line"><strong>${label}</strong><span>${money(value)} / ${money(target)}</span></div><progress max="100" value="${pct}" aria-label="${label}"></progress><small>${detail}</small></div>`;}
+ document.getElementById('azGoals').innerHTML='<h2>Objetivos económicos</h2>'+bar('Liquidez',f.total,500,f.total>=500?'Objetivo alcanzado · Reserva mínima: 400 €':`Faltan ${money(500-f.total)} · Reserva mínima: 400 €`)+['Aurora','Pedro'].map(w=>bar('Capital · '+w,f.repaid[w],f.capital[w],f.capital[w]>0?`Pendiente: ${money(f.capitalPending[w])}`:'Sin capital aportado')).join('');
+}
+function azCloseMore(){document.getElementById('azMoreMenu').hidden=true;document.getElementById('azMoreToggle').setAttribute('aria-expanded','false');}
+(()=>{const layout=document.getElementById('azDashboardLayout'),toggle=document.getElementById('azMenuToggle');let collapsed=false;try{collapsed=localStorage.getItem('azores-menu-collapsed')==='1'}catch(e){}function apply(){layout.classList.toggle('az-menu-collapsed',collapsed);toggle.setAttribute('aria-expanded',String(!collapsed));toggle.setAttribute('aria-label',collapsed?'Ampliar menú':'Plegar menú');}apply();toggle.addEventListener('click',()=>{collapsed=!collapsed;apply();try{localStorage.setItem('azores-menu-collapsed',collapsed?'1':'0')}catch(e){}});const more=document.getElementById('azMoreToggle'),panel=document.getElementById('azMoreMenu');more.addEventListener('click',()=>{panel.hidden=!panel.hidden;more.setAttribute('aria-expanded',String(!panel.hidden));});document.addEventListener('click',e=>{if(!panel.hidden&&!panel.contains(e.target)&&!more.contains(e.target))azCloseMore();});document.addEventListener('keydown',e=>{if(e.key==='Escape')azCloseMore();});})();
+
+// Entorno de pruebas: impedir acciones de edición en la interfaz.
+document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.closest("#view")&&activeTab!=="Oportunidades"&&!b.matches("[data-inventory-mode],[data-sales-group]" )||b.matches("#newProduct,#newProductTop,#importBackup,#clearAllPhotos,#registerPushButton,#retrySync")){e.preventDefault();e.stopImmediatePropagation();alert("Entorno de pruebas: utiliza Oportunidades. Los datos reales son de solo lectura.");}},true);
