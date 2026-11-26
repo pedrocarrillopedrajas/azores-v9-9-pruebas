@@ -14,7 +14,7 @@ async function refreshCloudSession(){
 }
 async function cloudFetch(path,options={}){
  const method=(options.method||"GET").toUpperCase();
- if(method!=="GET" && !(method==="POST" && ["/functions/v1/azores-comparador-precios","/functions/v1/azores-precio-oficial"].includes(path)))throw Error("Modo pruebas: escritura bloqueada");
+ if(method!=="GET" && !(method==="POST" && ["/functions/v1/azores-buscador-diagnostico","/functions/v1/azores-comparador-precios","/functions/v1/azores-precio-oficial"].includes(path)))throw Error("Modo pruebas: escritura bloqueada");
  let r=await fetch(SUPABASE_URL+path,{...options,headers:{...cloudHeaders(cloudSession.access_token),...(options.headers||{})}});
  if(r.status===401){await refreshCloudSession();r=await fetch(SUPABASE_URL+path,{...options,headers:{...cloudHeaders(cloudSession.access_token),...(options.headers||{})}});}
  if(!r.ok){let detail="";try{const j=await r.json();detail=j.message||j.msg||j.error_description||j.error||""}catch(_){}throw Error(detail||"Error de conexión ("+r.status+")");}
