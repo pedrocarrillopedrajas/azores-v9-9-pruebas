@@ -128,7 +128,7 @@ async function startCloud(){
 }
 function signOutCloud(){
  if(cloudDirty||cloudSaving){alert("Hay cambios sin sincronizar. Reintenta la sincronización antes de salir.");return;}
- oportunidad.epoch++; oportunidad.resultados=[]; oportunidad.ocupado=false; cloudReady=false;cloudSession=null;for(const url of photoUrlCache.values())if(url.startsWith("blob:"))URL.revokeObjectURL(url);photoUrlCache.clear();localStorage.removeItem(SESSION_KEY);
+ oportunidad.epoch++; oportunidad.rows=[]; oportunidad.buscada=""; oportunidad.marca=""; oportunidad.message=""; oportunidad.ages.clear(); oportunidad.ocupado=false; cloudReady=false;cloudSession=null;for(const url of photoUrlCache.values())if(url.startsWith("blob:"))URL.revokeObjectURL(url);photoUrlCache.clear();localStorage.removeItem(SESSION_KEY);
  products=[];finances={opening:{Aurora:0,Pedro:0},contributions:[],withdrawals:[],capitalRepayments:[]};
  localStorage.removeItem(KEY);localStorage.removeItem(FIN_KEY);setCloudLock(true);
  document.getElementById("loginForm").reset();document.getElementById("loginError").textContent="";
