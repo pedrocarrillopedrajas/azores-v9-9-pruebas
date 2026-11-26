@@ -1,6 +1,6 @@
 const SUPABASE_URL="https://lsuopaybsfdlofigxlac.supabase.co";
 const SUPABASE_KEY="sb_publishable_MEXZiitQlDx4lrh_vV4dag_8sbBKe7O";
-const SESSION_KEY="azores-pruebas-session-v947";
+const SESSION_KEY="azores-cloud-session-v8";
 let cloudSession=null, cloudReady=false, cloudSaving=false, cloudDirty=false, cloudTimer=null;
 const cloudStatus=()=>document.getElementById("cloudStatus");
 function setCloudStatus(message){const el=cloudStatus();if(el)el.textContent=message;}
@@ -13,8 +13,6 @@ async function refreshCloudSession(){
  cloudSession=j;localStorage.setItem(SESSION_KEY,JSON.stringify(j));return j;
 }
 async function cloudFetch(path,options={}){
- const method=(options.method||"GET").toUpperCase();
- if(method!=="GET" && !(method==="POST" && ["/functions/v1/azores-buscador-diagnostico","/functions/v1/azores-comparador-precios","/functions/v1/azores-precio-oficial"].includes(path)))throw Error("Modo pruebas: escritura bloqueada");
  let r=await fetch(SUPABASE_URL+path,{...options,headers:{...cloudHeaders(cloudSession.access_token),...(options.headers||{})}});
  if(r.status===401){await refreshCloudSession();r=await fetch(SUPABASE_URL+path,{...options,headers:{...cloudHeaders(cloudSession.access_token),...(options.headers||{})}});}
  if(!r.ok){let detail="";try{const j=await r.json();detail=j.message||j.msg||j.error_description||j.error||""}catch(_){}throw Error(detail||"Error de conexión ("+r.status+")");}
@@ -28,7 +26,6 @@ function photoIsStored(value){return typeof value==="string"&&value.startsWith(P
 function photoPath(value){return value.slice(PHOTO_PREFIX.length);}
 function photoDisplay(value){return photoIsStored(value)?(photoUrlCache.get(photoPath(value))||""):value||"";}
 async function photoStorageFetch(path,options={}){
- if((options.method||"GET").toUpperCase()!=="GET")throw Error("Modo pruebas: escritura de fotos bloqueada");
  const request=async()=>fetch(SUPABASE_URL+path,{...options,headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+cloudSession.access_token,...(options.headers||{})}});
  let response=await request();if(response.status===401){await refreshCloudSession();response=await request();}
  if(!response.ok){let message="Error de Storage ("+response.status+")";try{const d=await response.json();message=d.message||d.error||message;}catch{}throw Error(message);}
@@ -85,7 +82,6 @@ async function cleanupUnusedPhotos(){
  }
 }
 function queueCloudSave(){
- return;
  if(!cloudReady)return;
  cloudDirty=true;setCloudStatus("Cambios pendientes de sincronizar…");
  clearTimeout(cloudTimer);cloudTimer=setTimeout(flushCloudSave,350);
@@ -128,7 +124,7 @@ async function startCloud(){
 }
 function signOutCloud(){
  if(cloudDirty||cloudSaving){alert("Hay cambios sin sincronizar. Reintenta la sincronización antes de salir.");return;}
- oportunidad.epoch++; oportunidad.rows=[]; oportunidad.buscada=""; oportunidad.marca=""; oportunidad.message=""; oportunidad.ages.clear(); oportunidad.ocupado=false; cloudReady=false;cloudSession=null;for(const url of photoUrlCache.values())if(url.startsWith("blob:"))URL.revokeObjectURL(url);photoUrlCache.clear();localStorage.removeItem(SESSION_KEY);
+ cloudReady=false;cloudSession=null;for(const url of photoUrlCache.values())if(url.startsWith("blob:"))URL.revokeObjectURL(url);photoUrlCache.clear();localStorage.removeItem(SESSION_KEY);
  products=[];finances={opening:{Aurora:0,Pedro:0},contributions:[],withdrawals:[],capitalRepayments:[]};
  localStorage.removeItem(KEY);localStorage.removeItem(FIN_KEY);setCloudLock(true);
  document.getElementById("loginForm").reset();document.getElementById("loginError").textContent="";
@@ -149,9 +145,9 @@ document.getElementById("retrySync").addEventListener("click",()=>{if(!cloudRead
 window.addEventListener("online",()=>{if(cloudDirty)flushCloudSave()});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&cloudDirty)flushCloudSave()});
 setCloudLock(true);startCloud();
-const KEY="azores-pruebas-products-v947";
+const KEY="azores-prototype-products-v1";
 let products=JSON.parse(localStorage.getItem(KEY)||"[]");
-const FIN_KEY="azores-pruebas-finances-v947";
+const FIN_KEY="azores-finances-v7";
 let finances=JSON.parse(localStorage.getItem(FIN_KEY)||'{"opening":{"Aurora":0,"Pedro":0},"contributions":[],"withdrawals":[]}');
 finances.opening ||= {Aurora:0,Pedro:0};finances.contributions ||= [];finances.withdrawals ||= [];finances.capitalRepayments ||= [];
 function saveFin(){cacheLocalState();render();queueCloudSave()}
@@ -198,6 +194,8 @@ function stats(){
  if(f.total<=0){const cata=document.getElementById("cataCelebration");if(cata)cata.hidden=true;}
  document.getElementById("homePending").textContent=money(f.pending);
  document.getElementById("homeStock").textContent=products.filter(p=>!isSold(p)).length;
+ document.getElementById("homeSales").textContent=money(products.reduce((sum,p)=>sum+(isSold(p)?Number(p.salePrice)||0:0),0));
+ document.getElementById("homeProfit").textContent=money(f.profit);
 }
 function isSold(p){return p.salePrice!==""&&p.salePrice!=null}
 function productStatus(p){return isSold(p)?"Vendido":(p.status||"Sin vender")}
@@ -267,6 +265,7 @@ let azInventoryMode="cards";
 function azInventoryToolbar(rows){return `<div class="az-inventory-toolbar"><strong>${rows.length} productos · ${money(rows.reduce((n,p)=>n+(Number(p.purchasePrice)||0),0))} a coste</strong><div class="action-group"><button class="edit-product" data-inventory-mode="cards" aria-pressed="${azInventoryMode==="cards"}">▦ Tarjetas</button><button class="edit-product" data-inventory-mode="table" aria-pressed="${azInventoryMode==="table"}">☰ Tabla</button></div></div>`;}
 $("#view").addEventListener("click",e=>{const b=e.target.closest("[data-inventory-mode]");if(b){azInventoryMode=b.dataset.inventoryMode;render();}});
 function render(){
+ document.documentElement.dataset.section=activeTab;
  queueMicrotask(()=>hydrateStoredPhotos(document));
  stats();azRenderGoals();azRenderCalendar();$("#sectionTitle").textContent=activeTab;
  const home=activeTab==="Inicio";azRenderRecent(home);$("#azGoals").hidden=!home;
@@ -292,8 +291,6 @@ function render(){
  document.querySelector(".welcome").hidden=home;
  document.querySelectorAll("[data-tab]").forEach(b=>{const on=b.dataset.tab===activeTab;b.classList.toggle("active",on);if(on)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current");});
  const view=$("#view");
- $("#newProduct").hidden=activeTab==="Oportunidades";
- if(activeTab==="Oportunidades"){renderOportunidades(view);return;}
  if(home){view.innerHTML="";return;}
  if(activeTab==="Compras"||activeTab==="Inventario"){
    const rows=products.filter(p=>activeTab==="Compras"||!isSold(p));
@@ -455,7 +452,7 @@ function openDialog(id=null){
  dialog.showModal();
 }
 $("#newProduct").onclick=()=>openDialog();$("#newProductTop").onclick=()=>openDialog();$("#closeDialog").onclick=()=>dialog.close();$("#cancelDialog").onclick=()=>dialog.close();
-document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{activeTab=b.dataset.tab;azCloseMore();if(activeTab==="Ventas")salesGroupOpen=null;render();if(false)refreshVintedGoPreviews()}));
+document.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{activeTab=b.dataset.tab;azCloseMore();if(activeTab==="Ventas")salesGroupOpen=null;render();if(activeTab==="Envíos")refreshVintedGoPreviews()}));
 function updateProductPhotoPreview(){
  $("#photoPreview").innerHTML=photoData?`<img src="${esc(photoDisplay(photoData))}" data-storage-photo="${photoIsStored(photoData)?esc(photoData):""}" alt="Vista previa">`:"";
  hydrateStoredPhotos($("#photoPreview"));
@@ -812,6 +809,3 @@ function azRenderGoals(){
 }
 function azCloseMore(){document.getElementById('azMoreMenu').hidden=true;document.getElementById('azMoreToggle').setAttribute('aria-expanded','false');}
 (()=>{const layout=document.getElementById('azDashboardLayout'),toggle=document.getElementById('azMenuToggle');let collapsed=false;try{collapsed=localStorage.getItem('azores-menu-collapsed')==='1'}catch(e){}function apply(){layout.classList.toggle('az-menu-collapsed',collapsed);toggle.setAttribute('aria-expanded',String(!collapsed));toggle.setAttribute('aria-label',collapsed?'Ampliar menú':'Plegar menú');}apply();toggle.addEventListener('click',()=>{collapsed=!collapsed;apply();try{localStorage.setItem('azores-menu-collapsed',collapsed?'1':'0')}catch(e){}});const more=document.getElementById('azMoreToggle'),panel=document.getElementById('azMoreMenu');more.addEventListener('click',()=>{panel.hidden=!panel.hidden;more.setAttribute('aria-expanded',String(!panel.hidden));});document.addEventListener('click',e=>{if(!panel.hidden&&!panel.contains(e.target)&&!more.contains(e.target))azCloseMore();});document.addEventListener('keydown',e=>{if(e.key==='Escape')azCloseMore();});})();
-
-// Entorno de pruebas: impedir acciones de edición en la interfaz.
-document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.closest("#view")&&activeTab!=="Oportunidades"&&!b.matches("[data-inventory-mode],[data-sales-group]" )||b.matches("#newProduct,#newProductTop,#importBackup,#clearAllPhotos,#registerPushButton,#retrySync")){e.preventDefault();e.stopImmediatePropagation();alert("Entorno de pruebas: utiliza Oportunidades. Los datos reales son de solo lectura.");}},true);
